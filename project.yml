@@ -12,7 +12,7 @@ targets:
   FontaDynamicNotch:
     type: application
     platform: macOS
-    sources: [App, Diagnostics]
+    sources: [App, Notch, Settings, Diagnostics]
     info:
       path: App/Info.plist
       properties:
