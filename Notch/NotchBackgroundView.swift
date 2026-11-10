@@ -11,22 +11,39 @@ struct NotchBackgroundView: View {
         ZStack(alignment: .topLeading) {
             theme.fallbackBackground
             if let color {
-                color.mask {
-                    let n = geometry.notchRect
-                    let blend = theme.notchBlendRadius
-                    ZStack(alignment: .topLeading) {
-                        Color.white
-                        // Black (= transparent after luminanceToAlpha) over the notch, feathered by the blur.
-                        RoundedRectangle(cornerRadius: blend / 2, style: .continuous)
-                            .fill(Color.black)
-                            .frame(width: n.width + blend, height: n.height + blend * 1.5)
-                            .offset(x: n.minX - blend / 2, y: -blend)
-                            .blur(radius: blend / 2)
-                    }
-                    .compositingGroup()
-                    .luminanceToAlpha()
-                }
+                color.mask { NotchShadowMask(notch: geometry.notchRect, blend: theme.notchBlendRadius) }
             }
         }
+    }
+}
+
+/// White = colour visible, transparent = black shows. An oval gradient centred on the top of the notch:
+/// fully transparent over the whole notch, then a smooth fade to opaque over `blend` points.
+struct NotchShadowMask: View {
+    let notch: CGRect
+    let blend: CGFloat
+
+    var body: some View {
+        // Half-ellipse hanging from the top edge, reaching `blend` beyond the notch on each side and below.
+        let a = notch.width / 2 + blend          // horizontal semi-axis
+        let b = notch.height + blend             // vertical semi-axis
+        // Where the notch's bottom corner sits inside the ellipse (0 = centre, 1 = edge).
+        // Start fading a little before the notch corner, so the fade is long and soft (the corner stays ~95% dark).
+        let inner = 0.8 * min(0.95, sqrt(pow(notch.width / 2 / a, 2) + pow(notch.height / b, 2)))
+        // Smooth ease-out from solid to clear between `inner` and the edge.
+        let fade: [Gradient.Stop] = (0...8).map { i in
+            let t = Double(i) / 8
+            let s = t * t * (3 - 2 * t)
+            return .init(color: .black.opacity(1 - s), location: inner + (1 - inner) * t)
+        }
+
+        ZStack(alignment: .topLeading) {
+            Color.white
+            EllipticalGradient(stops: [.init(color: .black, location: 0)] + fade)
+            .frame(width: a * 2, height: b * 2)
+            .offset(x: notch.midX - a, y: -b)
+            .blendMode(.destinationOut)   // where the gradient is solid, the white is removed
+        }
+        .compositingGroup()
     }
 }

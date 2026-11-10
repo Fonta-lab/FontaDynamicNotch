@@ -14,10 +14,12 @@ struct NotchGeometry: Equatable {
     var notchRect: CGRect       // local
     var openRect: CGRect        // local
     var wingWidth: CGFloat
+    var closedHeight: CGFloat   // notch height + the user's fine-tune
 
     /// The closed black shape: the notch, plus a wing on each side when something is showing.
     func closedRect(wings: Bool) -> CGRect {
-        wings ? notchRect.insetBy(dx: -wingWidth, dy: 0) : notchRect
+        let base = CGRect(x: notchRect.minX, y: 0, width: notchRect.width, height: closedHeight)
+        return wings ? base.insetBy(dx: -wingWidth, dy: 0) : base
     }
 
     /// Where hovering opens the notch: the closed shape, a little wider and taller. [Guess]
@@ -27,8 +29,8 @@ struct NotchGeometry: Equatable {
     }
 
     /// Left and right wing areas (local).
-    var leftWing: CGRect { CGRect(x: notchRect.minX - wingWidth, y: 0, width: wingWidth, height: notchRect.height) }
-    var rightWing: CGRect { CGRect(x: notchRect.maxX, y: 0, width: wingWidth, height: notchRect.height) }
+    var leftWing: CGRect { CGRect(x: notchRect.minX - wingWidth, y: 0, width: wingWidth, height: closedHeight) }
+    var rightWing: CGRect { CGRect(x: notchRect.maxX, y: 0, width: wingWidth, height: closedHeight) }
 
     static func compute(screen: NSScreen, settings: AppSettings, knownNotchWidth: CGFloat?) -> NotchGeometry {
         let frame = screen.frame
@@ -62,7 +64,8 @@ struct NotchGeometry: Equatable {
         let wing = min(CGFloat(settings.closedWingWidth), (openW - notchW) / 2)
 
         return NotchGeometry(hasRealNotch: real, notchSize: CGSize(width: notchW, height: notchH),
-                             panelFrame: panelFrame, notchRect: notchRect, openRect: openRect, wingWidth: wing)
+                             panelFrame: panelFrame, notchRect: notchRect, openRect: openRect, wingWidth: wing,
+                             closedHeight: max(notchH, notchH + CGFloat(settings.closedHeightExtra)))
     }
 
     /// Converts a local rect to global AppKit coordinates.

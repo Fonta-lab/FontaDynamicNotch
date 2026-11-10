@@ -8,7 +8,7 @@ struct ClosedWingsView: View {
     private var spotify: SpotifyService { .shared }
 
     var body: some View {
-        let h = geometry.notchRect.height
+        let h = geometry.closedHeight
         let coverSide = max(12, h - 10)
         ZStack(alignment: .topLeading) {
             CoverImage(image: spotify.artwork, radius: theme.coverRadiusClosed)

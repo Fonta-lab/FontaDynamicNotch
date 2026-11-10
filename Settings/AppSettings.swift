@@ -20,6 +20,8 @@ struct AppSettings: Codable, Equatable, Sendable {
     var openWidth: Double = 600
     var openHeight: Double = 190
     var closedWingWidth: Double = 40
+    /// Extra height for the closed shape, because the physical notch hangs a bit below what macOS reports.
+    var closedHeightExtra: Double = 2
     // Advanced
     var showDebugOverlay = false
 
@@ -38,6 +40,7 @@ struct AppSettings: Codable, Equatable, Sendable {
         musicBarSpeed = try c.decodeIfPresent(Double.self, forKey: .musicBarSpeed) ?? d.musicBarSpeed
         musicBarsUseArtworkColor = try c.decodeIfPresent(Bool.self, forKey: .musicBarsUseArtworkColor) ?? d.musicBarsUseArtworkColor
         marqueeEnabled = try c.decodeIfPresent(Bool.self, forKey: .marqueeEnabled) ?? d.marqueeEnabled
+        closedHeightExtra = try c.decodeIfPresent(Double.self, forKey: .closedHeightExtra) ?? d.closedHeightExtra
         closedWingWidth = try c.decodeIfPresent(Double.self, forKey: .closedWingWidth) ?? d.closedWingWidth
         animations = try c.decodeIfPresent(AnimationSettings.self, forKey: .animations) ?? d.animations
         openWidth = try c.decodeIfPresent(Double.self, forKey: .openWidth) ?? d.openWidth

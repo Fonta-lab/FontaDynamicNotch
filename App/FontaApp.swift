@@ -63,6 +63,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         debug.addItem(toggle("Notch on all screens", s.notchOnAllScreens, #selector(toggleAllScreens)))
         debug.addItem(toggle("Show fake notch when idle", s.showFakeNotchWhenIdle, #selector(toggleFakeIdle)))
         debug.addItem(.separator())
+        let extra = Int(s.closedHeightExtra)
+        let info = NSMenuItem(title: "Closed notch extra height: \(extra) pt", action: nil, keyEquivalent: "")
+        info.isEnabled = false
+        debug.addItem(info)
+        debug.addItem(item("    Taller (+1 pt)", #selector(closedTaller)))
+        debug.addItem(item("    Shorter (−1 pt)", #selector(closedShorter)))
+        debug.addItem(.separator())
         debug.addItem(item("M0 Diagnostics…", #selector(showDiagnostics)))
         let debugItem = NSMenuItem(title: "Debug", action: nil, keyEquivalent: "")
         debugItem.submenu = debug
@@ -87,6 +94,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     @objc private func toggleOverlay() { settings.settings.showDebugOverlay.toggle() }
     @objc private func toggleAllScreens() { settings.settings.notchOnAllScreens.toggle() }
     @objc private func toggleFakeIdle() { settings.settings.showFakeNotchWhenIdle.toggle() }
+
+    @objc private func closedTaller() { settings.settings.closedHeightExtra = min(10, settings.settings.closedHeightExtra + 1) }
+    @objc private func closedShorter() { settings.settings.closedHeightExtra = max(0, settings.settings.closedHeightExtra - 1) }
 
     @objc private func showDiagnostics() {
         if diagnosticsWindow == nil {
