@@ -17,7 +17,7 @@ struct NotchGeometry: Equatable {
     var closedHeight: CGFloat   // notch height + the user's fine-tune
 
     /// Width of the right wing when it shows a time ("1:23:45" needs more room than the bars). [Guess]
-    static let timeWingWidth: CGFloat = 58
+    static let timeWingWidth: CGFloat = 68
 
     /// The closed black shape: the notch plus a left and a right wing (either can be 0).
     func closedRect(left: CGFloat, right: CGFloat) -> CGRect {

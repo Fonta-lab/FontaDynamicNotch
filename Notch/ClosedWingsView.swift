@@ -56,7 +56,7 @@ struct ClosedWingsView: View {
 /// stopwatch (without centiseconds). Updates once a second, only while visible.
 struct ClosedTimeView: View {
     let theme: Theme
-    static let fontSize: CGFloat = 12
+    static let fontSize: CGFloat = 14
     static let capHeight = NSFont.systemFont(ofSize: fontSize, weight: .semibold).capHeight
     private var timers: TimerStore { .shared }
     private var stopwatch: StopwatchStore { .shared }
