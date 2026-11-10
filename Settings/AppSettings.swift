@@ -14,6 +14,9 @@ struct AppSettings: Codable, Equatable, Sendable {
     var musicBarSpeed: Double = 1.0
     var musicBarsUseArtworkColor = true
     var marqueeEnabled = true
+    // Timers
+    var alarmSoundName = "Glass"        // a file in /System/Library/Sounds (picker + import in M9)
+    var alarmVolume: Double = 1.0
     // Animations
     var animations = AnimationSettings()
     // Layout
@@ -40,6 +43,8 @@ struct AppSettings: Codable, Equatable, Sendable {
         musicBarSpeed = try c.decodeIfPresent(Double.self, forKey: .musicBarSpeed) ?? d.musicBarSpeed
         musicBarsUseArtworkColor = try c.decodeIfPresent(Bool.self, forKey: .musicBarsUseArtworkColor) ?? d.musicBarsUseArtworkColor
         marqueeEnabled = try c.decodeIfPresent(Bool.self, forKey: .marqueeEnabled) ?? d.marqueeEnabled
+        alarmSoundName = try c.decodeIfPresent(String.self, forKey: .alarmSoundName) ?? d.alarmSoundName
+        alarmVolume = try c.decodeIfPresent(Double.self, forKey: .alarmVolume) ?? d.alarmVolume
         closedHeightExtra = try c.decodeIfPresent(Double.self, forKey: .closedHeightExtra) ?? d.closedHeightExtra
         closedWingWidth = try c.decodeIfPresent(Double.self, forKey: .closedWingWidth) ?? d.closedWingWidth
         animations = try c.decodeIfPresent(AnimationSettings.self, forKey: .animations) ?? d.animations

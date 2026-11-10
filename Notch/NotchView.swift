@@ -9,13 +9,15 @@ struct NotchView: View {
         let g = model.geometry
         let t = model.theme
         let open = model.isOpen
-        let wings = model.wingsVisible
-        let closed = g.closedRect(wings: wings)
-        let size = open ? g.openRect.size : closed.size
+        let half = g.notchRect.width / 2
+        let left = open ? g.openRect.width / 2 : half + model.leftWingWidth
+        let right = open ? g.openRect.width / 2 : half + model.rightWingWidth
+        let height = open ? g.openRect.height : g.closedHeight
         let topR = open ? min(t.topFilletRadius, NotchGeometry.margin) : 0
         let bottomR = open ? t.openBottomRadius : t.closedBottomRadius
-        let visible = open || wings || model.showsClosedShape
-        let shape = NotchShape(width: size.width, height: size.height, topRadius: topR, bottomRadius: bottomR)
+        let visible = open || model.wingsVisible || model.showsClosedShape
+        // The panel is centred on the notch, so the shape's centre line is the notch centre.
+        let shape = NotchShape(left: left, right: right, height: height, topRadius: topR, bottomRadius: bottomR)
 
         ZStack(alignment: .topLeading) {
             shape
@@ -28,14 +30,12 @@ struct NotchView: View {
                     .opacity(open ? 1 : 0)   // closed is always pure black
 
                 if open {
-                    OpenContentView(geometry: g, theme: t, settings: settings,
-                                    showScreenBrightness: model.showsScreenBrightness,
-                                    showKeyboardBrightness: model.showsKeyboardBrightness)
+                    OpenContentView(model: model, settings: settings)
                         .frame(width: g.openRect.width, height: g.openRect.height)
                         .offset(x: g.openRect.minX)
                         .transition(.opacity)
-                } else if wings {
-                    ClosedWingsView(geometry: g, theme: t, settings: settings)
+                } else if model.wingsVisible {
+                    ClosedWingsView(model: model, settings: settings)
                         .transition(.opacity)
                 }
             }
@@ -43,7 +43,7 @@ struct NotchView: View {
             .clipShape(shape)
         }
         .opacity(visible ? 1 : 0)
-        .animation(settings.animations.wings.animation, value: wings)
+        .animation(settings.animations.wings.animation, value: WingKey(left: model.leftWingWidth, right: model.rightWingWidth))
         .overlay(alignment: .topLeading) {
             if model.showDebugOverlay { DebugOverlayView(model: model) }
         }
@@ -53,31 +53,37 @@ struct NotchView: View {
             dismissToken: model.dismissToken))
     }
 
+    private struct WingKey: Equatable { let left: CGFloat; let right: CGFloat }
+
     private var backgroundColor: Color? {
         guard model.theme.useArtworkColor, spotify.isMusicActive, let c = spotify.artworkColor else { return nil }
         return c.scaled(model.theme.artworkIntensity).darkenedForWhiteText(contrast: model.theme.minTextContrast).color
     }
 }
 
-/// Everything inside the open notch: the top bar (filled in later milestones) and the Home tab.
+/// Everything inside the open notch: the top bar and the Home tab (or the alarm while ringing).
 struct OpenContentView: View {
-    let geometry: NotchGeometry
-    let theme: Theme
+    let model: NotchViewModel
     let settings: AppSettings
-    let showScreenBrightness: Bool
-    let showKeyboardBrightness: Bool
+    private var alarm: AlarmService { .shared }
 
     var body: some View {
+        let theme = model.theme
         VStack(spacing: 0) {
-            TopBarView(geometry: geometry.relativeToOpenRect, theme: theme, settings: settings,
-                       showScreenBrightness: showScreenBrightness, showKeyboardBrightness: showKeyboardBrightness)
-            HStack(alignment: .top, spacing: 14) {
-                MediaPanelView(theme: theme, settings: settings)
-                // Right tool panel (timer / stopwatch / counter) arrives in M6–M7.
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .fill(Color.white.opacity(0.06))
-                    .overlay(Text("Tools").font(.system(size: 11)).foregroundStyle(theme.secondaryText.opacity(0.6)))
-                    .frame(width: 150)
+            TopBarView(geometry: model.geometry.relativeToOpenRect, theme: theme, settings: settings,
+                       showScreenBrightness: model.showsScreenBrightness,
+                       showKeyboardBrightness: model.showsKeyboardBrightness)
+            Group {
+                if alarm.isRinging {
+                    AlarmView(theme: theme)
+                        .transition(.opacity)
+                } else {
+                    HStack(alignment: .top, spacing: 14) {
+                        MediaPanelView(theme: theme, settings: settings)
+                        ToolPanelView(theme: theme, spring: settings.animations.tabSwitch.animation)
+                            .frame(width: 172)
+                    }
+                }
             }
             .padding(.horizontal, 18)
             .padding(.top, 8)
@@ -92,11 +98,10 @@ struct DebugOverlayView: View {
 
     var body: some View {
         let g = model.geometry
-        let wings = model.wingsVisible
         ZStack(alignment: .topLeading) {
             outline(g.openRect, .blue)
-            outline(g.hotZone(wings: wings), .red, fill: model.isMouseInside && !model.isOpen ? 0.35 : 0)
-            outline(g.closedRect(wings: wings), .green)
+            outline(model.hotZone, .red, fill: model.isMouseInside && !model.isOpen ? 0.35 : 0)
+            outline(model.closedRect, .green)
             outline(g.notchRect, .yellow)
             VStack(alignment: .leading, spacing: 2) {
                 Text("\(model.screenName) · \(g.hasRealNotch ? "real notch" : "fake notch")\(model.isBuiltin ? " · built-in" : "")")

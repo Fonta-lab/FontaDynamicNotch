@@ -46,7 +46,7 @@ final class NotchController {
         guard !model.isFullscreenHidden else { return nil }
         let g = model.geometry
         // Expand by 1 pt upward so the very top pixel row of the screen counts as inside.
-        return g.toGlobal(model.isOpen ? g.openRect : g.hotZone(wings: model.wingsVisible)).insetBy(dx: 0, dy: -1)
+        return g.toGlobal(model.isOpen ? g.openRect : model.hotZone).insetBy(dx: 0, dy: -1)
     }
 
     func mouseMoved(to p: NSPoint) {
@@ -106,16 +106,17 @@ final class NotchController {
         closeWork = nil
     }
 
-    func open() {
+    func open(animation: Animation? = nil) {
         cancelOpen()
         guard !model.isOpen, !model.isFullscreenHidden else { return }
-        withAnimation(settings.animations.open.animation) { model.isOpen = true }
+        ToolState.shared.prepareForOpen()
+        withAnimation(animation ?? settings.animations.open.animation) { model.isOpen = true }
         mouseMoved(to: NSEvent.mouseLocation)
     }
 
     func close() {
         cancelClose()
-        guard model.isOpen else { return }
+        guard model.isOpen, model.closeBlockers.isEmpty || model.isFullscreenHidden else { return }
         withAnimation(settings.animations.close.animation) { model.isOpen = false }
         mouseMoved(to: NSEvent.mouseLocation)
     }
@@ -128,6 +129,13 @@ final class NotchController {
         } else if model.closeBlockers.remove(blocker) != nil {
             mouseMoved(to: NSEvent.mouseLocation)
         }
+    }
+
+    var isFullscreenHidden: Bool { model.isFullscreenHidden }
+
+    /// True if the cursor is on this controller's screen.
+    func containsMouse(_ p: NSPoint) -> Bool {
+        NSScreen.screens.contains { $0.displayID == displayID && $0.frame.contains(p) }
     }
 
     // MARK: Right-click menu

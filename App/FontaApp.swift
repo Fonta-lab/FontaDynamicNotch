@@ -25,13 +25,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             AudioService.shared.start()
             BrightnessService.shared.start()
             let manager = ScreenManager(settingsStore: settings) { [weak self] in self?.makeMenu() ?? NSMenu() }
+            AlarmService.shared.onRingingChanged = { [weak manager] ringing in manager?.alarmChanged(ringing: ringing) }
             manager.start()
             screenManager = manager
+            await StateStore.shared.load()   // timers (may ring/notify, so screens must exist first)
         }
     }
 
     func applicationWillTerminate(_ notification: Notification) {
         settings.flush()
+        StateStore.shared.flush()
     }
 
     // MARK: Menu bar icon

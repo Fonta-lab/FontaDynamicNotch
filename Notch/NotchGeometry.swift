@@ -16,21 +16,22 @@ struct NotchGeometry: Equatable {
     var wingWidth: CGFloat
     var closedHeight: CGFloat   // notch height + the user's fine-tune
 
-    /// The closed black shape: the notch, plus a wing on each side when something is showing.
-    func closedRect(wings: Bool) -> CGRect {
-        let base = CGRect(x: notchRect.minX, y: 0, width: notchRect.width, height: closedHeight)
-        return wings ? base.insetBy(dx: -wingWidth, dy: 0) : base
+    /// Width of the right wing when it shows a time ("1:23:45" needs more room than the bars). [Guess]
+    static let timeWingWidth: CGFloat = 58
+
+    /// The closed black shape: the notch plus a left and a right wing (either can be 0).
+    func closedRect(left: CGFloat, right: CGFloat) -> CGRect {
+        CGRect(x: notchRect.minX - left, y: 0, width: notchRect.width + left + right, height: closedHeight)
     }
 
     /// Where hovering opens the notch: the closed shape, a little wider and taller. [Guess]
-    func hotZone(wings: Bool) -> CGRect {
-        let c = closedRect(wings: wings)
+    func hotZone(left: CGFloat, right: CGFloat) -> CGRect {
+        let c = closedRect(left: left, right: right)
         return CGRect(x: c.minX - 8, y: 0, width: c.width + 16, height: c.height + 4)
     }
 
-    /// Left and right wing areas (local).
-    var leftWing: CGRect { CGRect(x: notchRect.minX - wingWidth, y: 0, width: wingWidth, height: closedHeight) }
-    var rightWing: CGRect { CGRect(x: notchRect.maxX, y: 0, width: wingWidth, height: closedHeight) }
+    func leftWing(_ width: CGFloat) -> CGRect { CGRect(x: notchRect.minX - width, y: 0, width: width, height: closedHeight) }
+    func rightWing(_ width: CGFloat) -> CGRect { CGRect(x: notchRect.maxX, y: 0, width: width, height: closedHeight) }
 
     static func compute(screen: NSScreen, settings: AppSettings, knownNotchWidth: CGFloat?) -> NotchGeometry {
         let frame = screen.frame

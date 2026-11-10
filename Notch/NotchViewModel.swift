@@ -37,8 +37,30 @@ final class NotchViewModel {
         self.showDebugOverlay = settings.showDebugOverlay
     }
 
-    /// Closed wings are visible while music is active (timers join in M6).
-    var wingsVisible: Bool { SpotifyService.shared.isMusicActive }
+    // MARK: Closed wings (SPEC §4.1)
+
+    /// What the right wing shows.
+    enum RightWing { case none, bars, time }
+
+    /// A running timer (or, in M7, stopwatch) beats the bars.
+    var rightWingContent: RightWing {
+        if TimerStore.shared.anyRunning { return .time }
+        return SpotifyService.shared.isMusicActive ? .bars : .none
+    }
+
+    var leftWingWidth: CGFloat { SpotifyService.shared.isMusicActive ? geometry.wingWidth : 0 }
+
+    var rightWingWidth: CGFloat {
+        switch rightWingContent {
+        case .none: 0
+        case .bars: geometry.wingWidth
+        case .time: max(geometry.wingWidth, NotchGeometry.timeWingWidth)
+        }
+    }
+
+    var wingsVisible: Bool { leftWingWidth > 0 || rightWingWidth > 0 }
+    var closedRect: CGRect { geometry.closedRect(left: leftWingWidth, right: rightWingWidth) }
+    var hotZone: CGRect { geometry.hotZone(left: leftWingWidth, right: rightWingWidth) }
 
     /// Screen brightness only on the built-in display's notch (it would control the wrong display elsewhere).
     var showsScreenBrightness: Bool { isBuiltin && BrightnessService.shared.screenAvailable }

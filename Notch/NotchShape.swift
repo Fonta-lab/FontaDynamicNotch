@@ -1,28 +1,32 @@
 import SwiftUI
 
-/// The notch outline, centred horizontally at the top of its rect.
+/// The notch outline. It hangs from the top of its rect; `left` and `right` are how far it reaches
+/// from the centre line (the notch centre) on each side, so the closed wings can be uneven.
 /// Top corners are outward concave fillets that merge into the menu bar; bottom corners are rounded.
 struct NotchShape: Shape {
-    var width: CGFloat
+    var left: CGFloat
+    var right: CGFloat
     var height: CGFloat
     var topRadius: CGFloat
     var bottomRadius: CGFloat
 
-    var animatableData: AnimatablePair<AnimatablePair<CGFloat, CGFloat>, AnimatablePair<CGFloat, CGFloat>> {
-        get { AnimatablePair(AnimatablePair(width, height), AnimatablePair(topRadius, bottomRadius)) }
+    var animatableData: AnimatablePair<AnimatablePair<CGFloat, CGFloat>, AnimatablePair<CGFloat, AnimatablePair<CGFloat, CGFloat>>> {
+        get { AnimatablePair(AnimatablePair(left, right), AnimatablePair(height, AnimatablePair(topRadius, bottomRadius))) }
         set {
-            width = newValue.first.first
-            height = newValue.first.second
-            topRadius = newValue.second.first
-            bottomRadius = newValue.second.second
+            left = newValue.first.first
+            right = newValue.first.second
+            height = newValue.second.first
+            topRadius = newValue.second.second.first
+            bottomRadius = newValue.second.second.second
         }
     }
 
     func path(in rect: CGRect) -> Path {
-        let x0 = rect.midX - width / 2
-        let x1 = rect.midX + width / 2
+        let x0 = rect.midX - left
+        let x1 = rect.midX + right
         let top = rect.minY
         let bottom = top + height
+        let width = x1 - x0
         let tr = max(0, min(topRadius, height / 2))
         let br = max(0, min(bottomRadius, width / 2, height - tr))
 

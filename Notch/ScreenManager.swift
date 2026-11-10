@@ -91,8 +91,27 @@ final class ScreenManager {
                 controllers[id] = NotchController(displayID: id, screen: screen, geometry: g, settings: settings, menuProvider: menuProvider)
             }
         }
-        for c in controllers.values { c.model.builtinScreenPresent = builtinScreenPresent }
+        for c in controllers.values {
+            c.model.builtinScreenPresent = builtinScreenPresent
+            c.setBlocker(.alarm, AlarmService.shared.isRinging)
+        }
         mouseMoved(to: NSEvent.mouseLocation)
+    }
+
+    /// Alarm (SPEC §7.4): open the notch on the screen with the mouse, keep every notch from closing
+    /// while it rings, release them when it stops.
+    func alarmChanged(ringing: Bool) {
+        for c in controllers.values { c.setBlocker(.alarm, ringing) }
+        guard ringing else { return }
+        let mouse = NSEvent.mouseLocation
+        let visible = controllers.values.filter { !$0.isFullscreenHidden }
+        let target = visible.first { $0.containsMouse(mouse) } ?? visible.first
+        if let target {
+            target.open(animation: settingsStore.settings.animations.alarmOpen.animation)
+        } else {
+            // Every notch is hidden (full screen): make sure the user still hears about it.
+            NotificationService.shared.post(title: "⏲ Timer ended", body: TimerStore.shared.ringing.map(\.name).joined(separator: ", "))
+        }
     }
 
     /// Click-through and hover: each panel decides from the cursor position.
