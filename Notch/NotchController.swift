@@ -20,7 +20,7 @@ final class NotchController {
         model = NotchViewModel(geometry: geometry, screenName: screen.localizedName,
                                isBuiltin: CGDisplayIsBuiltin(displayID) != 0, settings: settings)
         panel = NotchPanel(frame: geometry.panelFrame)
-        let host = NSHostingView(rootView: NotchView(model: model))
+        let host = NotchHostingView(rootView: NotchView(model: model))
         host.sizingOptions = []
         panel.contentView = host
         panel.onRightMouseDown = { [weak self] event in self?.showContextMenu(event) }
@@ -45,7 +45,7 @@ final class NotchController {
         guard !model.isFullscreenHidden else { return nil }
         let g = model.geometry
         // Expand by 1 pt upward so the very top pixel row of the screen counts as inside.
-        return g.toGlobal(model.isOpen ? g.openRect : g.hotZone).insetBy(dx: 0, dy: -1)
+        return g.toGlobal(model.isOpen ? g.openRect : g.hotZone(wings: model.wingsVisible)).insetBy(dx: 0, dy: -1)
     }
 
     func mouseMoved(to p: NSPoint) {
@@ -157,4 +157,9 @@ final class NotchController {
         panel.orderOut(nil)
         panel.contentView = nil
     }
+}
+
+/// Clicks work on the first press even though the panel never becomes the key window.
+final class NotchHostingView<Content: View>: NSHostingView<Content> {
+    override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
 }

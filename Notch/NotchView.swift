@@ -2,38 +2,80 @@ import SwiftUI
 
 struct NotchView: View {
     let model: NotchViewModel
+    private var settings: AppSettings { SettingsStore.shared.settings }
+    private var spotify: SpotifyService { .shared }
 
     var body: some View {
         let g = model.geometry
         let t = model.theme
         let open = model.isOpen
-        let size = open ? g.openRect.size : g.closedRect.size
+        let wings = model.wingsVisible
+        let closed = g.closedRect(wings: wings)
+        let size = open ? g.openRect.size : closed.size
         let topR = open ? min(t.topFilletRadius, NotchGeometry.margin) : 0
         let bottomR = open ? t.openBottomRadius : t.closedBottomRadius
-        let visible = open || model.showsClosedShape
+        let visible = open || wings || model.showsClosedShape
+        let shape = NotchShape(width: size.width, height: size.height, topRadius: topR, bottomRadius: bottomR)
 
         ZStack(alignment: .topLeading) {
-            NotchShape(width: size.width, height: size.height, topRadius: topR, bottomRadius: bottomR)
+            shape
                 .fill(Color.black)
                 .shadow(color: .black.opacity(open && t.shadowEnabled ? t.shadowOpacity : 0),
                         radius: t.shadowRadius, y: t.shadowYOffset)
-                .opacity(visible ? 1 : 0)
 
-            if open {
-                // Placeholder until the Home tab arrives in M3.
-                Text("Fonta's Dynamic Notch")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(.white.opacity(0.45))
-                    .frame(width: g.openRect.width, height: g.openRect.height - g.notchRect.height)
-                    .offset(x: g.openRect.minX, y: g.notchRect.maxY)
-                    .transition(.opacity)
-            }
+            ZStack(alignment: .topLeading) {
+                NotchBackgroundView(geometry: g, theme: t, color: backgroundColor)
+                    .opacity(open ? 1 : 0)   // closed is always pure black
 
-            if model.showDebugOverlay {
-                DebugOverlayView(model: model)
+                if open {
+                    OpenContentView(geometry: g, theme: t, settings: settings)
+                        .frame(width: g.openRect.width, height: g.openRect.height)
+                        .offset(x: g.openRect.minX)
+                        .transition(.opacity)
+                } else if wings {
+                    ClosedWingsView(geometry: g, theme: t, settings: settings)
+                        .transition(.opacity)
+                }
             }
+            .frame(width: g.panelFrame.width, height: g.panelFrame.height, alignment: .topLeading)
+            .clipShape(shape)
+        }
+        .opacity(visible ? 1 : 0)
+        .animation(settings.animations.wings.animation, value: wings)
+        .overlay(alignment: .topLeading) {
+            if model.showDebugOverlay { DebugOverlayView(model: model) }
         }
         .frame(width: g.panelFrame.width, height: g.panelFrame.height, alignment: .topLeading)
+    }
+
+    private var backgroundColor: Color? {
+        guard model.theme.useArtworkColor, spotify.isMusicActive, let c = spotify.artworkColor else { return nil }
+        return c.scaled(model.theme.artworkIntensity).darkenedForWhiteText(contrast: model.theme.minTextContrast).color
+    }
+}
+
+/// Everything inside the open notch: the top bar (filled in later milestones) and the Home tab.
+struct OpenContentView: View {
+    let geometry: NotchGeometry
+    let theme: Theme
+    let settings: AppSettings
+
+    var body: some View {
+        VStack(spacing: 0) {
+            // Top bar: same height as the notch. Tabs, brightness and tool buttons arrive in M5–M8.
+            Color.clear.frame(height: geometry.notchRect.height)
+            HStack(alignment: .top, spacing: 14) {
+                MediaPanelView(theme: theme, settings: settings)
+                // Right tool panel (timer / stopwatch / counter) arrives in M6–M7.
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .fill(Color.white.opacity(0.06))
+                    .overlay(Text("Tools").font(.system(size: 11)).foregroundStyle(theme.secondaryText.opacity(0.6)))
+                    .frame(width: 150)
+            }
+            .padding(.horizontal, 18)
+            .padding(.top, 8)
+            .padding(.bottom, 16)
+        }
     }
 }
 
@@ -43,10 +85,11 @@ struct DebugOverlayView: View {
 
     var body: some View {
         let g = model.geometry
+        let wings = model.wingsVisible
         ZStack(alignment: .topLeading) {
             outline(g.openRect, .blue)
-            outline(g.hotZone, .red, fill: model.isMouseInside && !model.isOpen ? 0.35 : 0)
-            outline(g.closedRect, .green)
+            outline(g.hotZone(wings: wings), .red, fill: model.isMouseInside && !model.isOpen ? 0.35 : 0)
+            outline(g.closedRect(wings: wings), .green)
             outline(g.notchRect, .yellow)
             VStack(alignment: .leading, spacing: 2) {
                 Text("\(model.screenName) · \(g.hasRealNotch ? "real notch" : "fake notch")\(model.isBuiltin ? " · built-in" : "")")

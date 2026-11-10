@@ -12,9 +12,23 @@ struct NotchGeometry: Equatable {
     var notchSize: CGSize
     var panelFrame: CGRect      // global AppKit coordinates
     var notchRect: CGRect       // local
-    var closedRect: CGRect      // local (same as the notch until wings exist, M3)
     var openRect: CGRect        // local
-    var hotZone: CGRect         // local
+    var wingWidth: CGFloat
+
+    /// The closed black shape: the notch, plus a wing on each side when something is showing.
+    func closedRect(wings: Bool) -> CGRect {
+        wings ? notchRect.insetBy(dx: -wingWidth, dy: 0) : notchRect
+    }
+
+    /// Where hovering opens the notch: the closed shape, a little wider and taller. [Guess]
+    func hotZone(wings: Bool) -> CGRect {
+        let c = closedRect(wings: wings)
+        return CGRect(x: c.minX - 8, y: 0, width: c.width + 16, height: c.height + 4)
+    }
+
+    /// Left and right wing areas (local).
+    var leftWing: CGRect { CGRect(x: notchRect.minX - wingWidth, y: 0, width: wingWidth, height: notchRect.height) }
+    var rightWing: CGRect { CGRect(x: notchRect.maxX, y: 0, width: wingWidth, height: notchRect.height) }
 
     static func compute(screen: NSScreen, settings: AppSettings, knownNotchWidth: CGFloat?) -> NotchGeometry {
         let frame = screen.frame
@@ -45,12 +59,10 @@ struct NotchGeometry: Equatable {
 
         let notchRect = CGRect(x: (panelW - notchW) / 2, y: 0, width: notchW, height: notchH)
         let openRect = CGRect(x: (panelW - openW) / 2, y: 0, width: openW, height: openH)
-        // Hot zone: the closed shape, a little wider and taller so it is easy to hit. [Guess]
-        let hot = CGRect(x: notchRect.minX - 8, y: 0, width: notchRect.width + 16, height: notchRect.height + 4)
+        let wing = min(CGFloat(settings.closedWingWidth), (openW - notchW) / 2)
 
         return NotchGeometry(hasRealNotch: real, notchSize: CGSize(width: notchW, height: notchH),
-                             panelFrame: panelFrame, notchRect: notchRect, closedRect: notchRect,
-                             openRect: openRect, hotZone: hot)
+                             panelFrame: panelFrame, notchRect: notchRect, openRect: openRect, wingWidth: wing)
     }
 
     /// Converts a local rect to global AppKit coordinates.

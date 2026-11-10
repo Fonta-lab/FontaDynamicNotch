@@ -32,6 +32,9 @@ final class NotchViewModel {
         self.showDebugOverlay = settings.showDebugOverlay
     }
 
+    /// Closed wings are visible while music is active (timers join in M6).
+    var wingsVisible: Bool { SpotifyService.shared.isMusicActive }
+
     /// Whether the black closed shape is drawn.
     var showsClosedShape: Bool { geometry.hasRealNotch || showFakeNotchWhenIdle }
 }

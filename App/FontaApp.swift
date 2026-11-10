@@ -21,6 +21,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         Task { [weak self] in
             guard let self else { return }
             await settings.load()
+            SpotifyService.shared.start()
             let manager = ScreenManager(settingsStore: settings) { [weak self] in self?.makeMenu() ?? NSMenu() }
             manager.start()
             screenManager = manager
