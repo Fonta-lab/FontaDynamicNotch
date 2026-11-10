@@ -68,6 +68,15 @@ struct NotchGeometry: Equatable {
                              closedHeight: max(notchH, notchH + CGFloat(settings.closedHeightExtra)))
     }
 
+    /// The same geometry with local rects shifted so the open rect starts at x = 0
+    /// (for views laid out inside the open area).
+    var relativeToOpenRect: NotchGeometry {
+        var g = self
+        g.notchRect.origin.x -= openRect.minX
+        g.openRect.origin.x = 0
+        return g
+    }
+
     /// Converts a local rect to global AppKit coordinates.
     func toGlobal(_ r: CGRect) -> CGRect {
         CGRect(x: panelFrame.minX + r.minX, y: panelFrame.maxY - r.maxY, width: r.width, height: r.height)

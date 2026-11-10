@@ -28,7 +28,9 @@ struct NotchView: View {
                     .opacity(open ? 1 : 0)   // closed is always pure black
 
                 if open {
-                    OpenContentView(geometry: g, theme: t, settings: settings)
+                    OpenContentView(geometry: g, theme: t, settings: settings,
+                                    showScreenBrightness: model.showsScreenBrightness,
+                                    showKeyboardBrightness: model.showsKeyboardBrightness)
                         .frame(width: g.openRect.width, height: g.openRect.height)
                         .offset(x: g.openRect.minX)
                         .transition(.opacity)
@@ -62,11 +64,13 @@ struct OpenContentView: View {
     let geometry: NotchGeometry
     let theme: Theme
     let settings: AppSettings
+    let showScreenBrightness: Bool
+    let showKeyboardBrightness: Bool
 
     var body: some View {
         VStack(spacing: 0) {
-            // Top bar: same height as the notch. Tabs, brightness and tool buttons arrive in M5–M8.
-            Color.clear.frame(height: geometry.notchRect.height)
+            TopBarView(geometry: geometry.relativeToOpenRect, theme: theme, settings: settings,
+                       showScreenBrightness: showScreenBrightness, showKeyboardBrightness: showKeyboardBrightness)
             HStack(alignment: .top, spacing: 14) {
                 MediaPanelView(theme: theme, settings: settings)
                 // Right tool panel (timer / stopwatch / counter) arrives in M6–M7.

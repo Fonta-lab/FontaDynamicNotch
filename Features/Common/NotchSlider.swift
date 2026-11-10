@@ -8,6 +8,8 @@ struct NotchSlider: View {
     var enabled = true
     var onChange: ((Double) -> Void)? = nil
     var onEnd: ((Double) -> Void)? = nil
+    /// true when a drag starts, false when it ends.
+    var onEditingChanged: ((Bool) -> Void)? = nil
 
     @State private var dragValue: Double?
     @State private var hovering = false
@@ -34,6 +36,7 @@ struct NotchSlider: View {
                     .onChanged { g in
                         guard enabled else { return }
                         let f = min(1, max(0, g.location.x / w))
+                        if dragValue == nil { onEditingChanged?(true) }
                         dragValue = f
                         onChange?(f)
                     }
@@ -42,6 +45,7 @@ struct NotchSlider: View {
                         let f = min(1, max(0, g.location.x / w))
                         onEnd?(f)
                         dragValue = nil
+                        onEditingChanged?(false)
                     }
             )
         }

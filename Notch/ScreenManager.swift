@@ -91,6 +91,7 @@ final class ScreenManager {
                 controllers[id] = NotchController(displayID: id, screen: screen, geometry: g, settings: settings, menuProvider: menuProvider)
             }
         }
+        for c in controllers.values { c.model.builtinScreenPresent = builtinScreenPresent }
         mouseMoved(to: NSEvent.mouseLocation)
     }
 

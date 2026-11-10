@@ -17,6 +17,8 @@ final class NotchViewModel {
     var theme = Theme.default
     var screenName: String
     var isBuiltin: Bool
+    /// False when the lid is closed (no built-in display anywhere).
+    var builtinScreenPresent = true
     var showFakeNotchWhenIdle: Bool
     var showDebugOverlay: Bool
     var isFullscreenHidden = false
@@ -37,6 +39,11 @@ final class NotchViewModel {
 
     /// Closed wings are visible while music is active (timers join in M6).
     var wingsVisible: Bool { SpotifyService.shared.isMusicActive }
+
+    /// Screen brightness only on the built-in display's notch (it would control the wrong display elsewhere).
+    var showsScreenBrightness: Bool { isBuiltin && BrightnessService.shared.screenAvailable }
+    /// Keyboard brightness on any notch, but only while the lid is open.
+    var showsKeyboardBrightness: Bool { builtinScreenPresent && BrightnessService.shared.keyboardAvailable }
 
     /// Whether the black closed shape is drawn.
     var showsClosedShape: Bool { geometry.hasRealNotch || showFakeNotchWhenIdle }
