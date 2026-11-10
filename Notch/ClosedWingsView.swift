@@ -13,25 +13,32 @@ struct ClosedWingsView: View {
         let h = g.closedHeight
         let left = g.leftWing(model.leftWingWidth)
         let right = g.rightWing(model.rightWingWidth)
+        // Each item sits as far from the wing's outer side as from the bottom edge.
         ZStack(alignment: .topLeading) {
             if model.leftWingWidth > 0 {
                 let side = max(12, h - 10)
+                let inset = (h - side) / 2
                 CoverImage(image: spotify.artwork, radius: theme.coverRadiusClosed)
                     .frame(width: side, height: side)
-                    .position(x: left.midX, y: left.midY)
+                    .position(x: left.minX + inset + side / 2, y: h / 2)
                     .transition(.opacity)
             }
             switch model.rightWingContent {
             case .bars:
                 let count = min(8, max(3, settings.musicBarCount))
+                let barsW = CGFloat(count) * 5 - 2
+                let barsH = max(8, h - 16)
+                let inset = (h - barsH) / 2
                 MusicBarsView(count: count, speed: settings.musicBarSpeed, color: barColor(theme), playing: spotify.isPlaying)
-                    .frame(width: CGFloat(count) * 5, height: max(8, h - 16))
-                    .position(x: right.midX, y: right.midY)
+                    .frame(width: barsW, height: barsH)
+                    .position(x: right.maxX - inset - barsW / 2, y: h / 2)
                     .transition(.opacity)
             case .time:
+                // The digits' visible height is the font's cap height, so that's what we measure from.
+                let inset = (h - ClosedTimeView.capHeight) / 2
                 ClosedTimeView(theme: theme)
-                    .frame(width: right.width, height: h)
-                    .position(x: right.midX, y: right.midY)
+                    .frame(width: max(10, right.width - inset), height: h, alignment: .trailing)
+                    .position(x: right.maxX - inset - (right.width - inset) / 2, y: h / 2)
                     .transition(.opacity)
             case .none:
                 EmptyView()
@@ -49,6 +56,8 @@ struct ClosedWingsView: View {
 /// stopwatch (without centiseconds). Updates once a second, only while visible.
 struct ClosedTimeView: View {
     let theme: Theme
+    static let fontSize: CGFloat = 12
+    static let capHeight = NSFont.systemFont(ofSize: fontSize, weight: .semibold).capHeight
     private var timers: TimerStore { .shared }
     private var stopwatch: StopwatchStore { .shared }
 
@@ -56,7 +65,7 @@ struct ClosedTimeView: View {
         TimelineView(.periodic(from: .now, by: 1)) { ctx in
             if let text = text(at: ctx.date) {
                 Text(text)
-                    .font(.system(size: 12, weight: .semibold).monospacedDigit())
+                    .font(.system(size: Self.fontSize, weight: .semibold).monospacedDigit())
                     .foregroundStyle(theme.primaryText)
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)

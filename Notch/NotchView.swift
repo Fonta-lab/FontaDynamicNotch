@@ -78,7 +78,8 @@ struct OpenContentView: View {
                     AlarmView(theme: theme)
                         .transition(.opacity)
                 } else {
-                    HStack(alignment: .top, spacing: 14) {
+                    // Music block centred vertically against the (full-height) tool panel.
+                    HStack(alignment: .center, spacing: 14) {
                         MediaPanelView(theme: theme, settings: settings)
                         ToolPanelView(theme: theme, spring: settings.animations.tabSwitch.animation)
                             .frame(width: 172)
