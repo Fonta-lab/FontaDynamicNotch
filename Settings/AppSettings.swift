@@ -11,8 +11,8 @@ struct AppSettings: Codable, Equatable, Sendable {
     // Animations
     var animations = AnimationSettings()
     // Layout
-    var openWidth: Double = 640
-    var openHeight: Double = 200
+    var openWidth: Double = 600
+    var openHeight: Double = 190
     // Advanced
     var showDebugOverlay = false
 

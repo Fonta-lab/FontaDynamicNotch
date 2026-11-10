@@ -150,7 +150,7 @@ Do **not** close while:
  ╰──────────────────────────────────────────────────────────────────────────╯
 ```
 
-- Default open size: **640 × 200 pt** including the top bar [Guess]. Configurable.
+- Default open size: **600 × 190 pt** including the top bar (chosen by the user after M2). Configurable.
 - Top corners have **outward concave fillets** that merge into the menu bar (as in the drawing). Bottom corners are rounded.
 - **Top bar left group** (left of the real notch), default order: Home/Files toggle (Boring-Notch style pair of icons), Screen brightness, Keyboard brightness.
 - **Top bar right group** (right of the real notch), default order: Timer, Stopwatch, Counter. The selected tool is highlighted; clicking selects which tool the right panel shows.
