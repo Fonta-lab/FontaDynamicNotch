@@ -17,9 +17,10 @@ final class StateStore {
         let state = await Task.detached(priority: .userInitiated) {
             JSONFile.read(PersistedState.self, name: Self.fileName) ?? PersistedState()
         }.value
-        TimerStore.shared.restore(state.timers, selectedID: state.selectedTimerID)
-        ToolState.shared.restore(state.lastTool)
+        // Mark loaded first, so changes made while restoring (missed timers reset to idle) get saved.
         loaded = true
+        ToolState.shared.restore(state.lastTool)
+        TimerStore.shared.restore(state.timers, selectedID: state.selectedTimerID)
     }
 
     func markDirty() {
