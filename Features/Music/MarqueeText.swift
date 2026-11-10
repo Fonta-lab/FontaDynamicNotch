@@ -16,27 +16,28 @@ struct MarqueeText: View {
 
     var body: some View {
         let scrolling = enabled && hoverStart != nil && textWidth > boxWidth + 1
-        ZStack(alignment: .leading) {
-            if scrolling, let start = hoverStart {
-                TimelineView(.animation(minimumInterval: 1.0 / 30)) { ctx in
-                    let cycle = Double(textWidth + gap)
-                    let elapsed = max(0, ctx.date.timeIntervalSince(start) - 0.6)   // short pause before scrolling
-                    let x = (elapsed * speed).truncatingRemainder(dividingBy: cycle)
-                    HStack(spacing: gap) { label; label }
-                        .fixedSize()
-                        .offset(x: -x)
+        // The truncated label sets the size; the scrolling copy is drawn on top, so it can't widen the box.
+        label.lineLimit(1).truncationMode(.tail)
+            .opacity(scrolling ? 0 : 1)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .overlay(alignment: .leading) {
+                if scrolling, let start = hoverStart {
+                    TimelineView(.animation(minimumInterval: 1.0 / 30)) { ctx in
+                        let cycle = Double(textWidth + gap)
+                        let elapsed = max(0, ctx.date.timeIntervalSince(start) - 0.6)   // short pause before scrolling
+                        let x = (elapsed * speed).truncatingRemainder(dividingBy: cycle)
+                        HStack(spacing: gap) { label; label }
+                            .fixedSize()
+                            .offset(x: -x)
+                    }
                 }
-            } else {
-                label.lineLimit(1).truncationMode(.tail)
             }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .clipped()
-        .background(
-            label.fixedSize().hidden()
-                .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { textWidth = $0 }
-        )
-        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { boxWidth = $0 }
+            .clipped()
+            .background(
+                label.fixedSize().hidden()
+                    .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { textWidth = $0 }
+            )
+            .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { boxWidth = $0 }
         .contentShape(Rectangle())
         .onHover { hoverStart = $0 ? Date() : nil }
         .onChange(of: text) { hoverStart = hoverStart == nil ? nil : Date() }
