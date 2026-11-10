@@ -9,6 +9,7 @@ final class DiagModel: ObservableObject {
 
     init() {
         spotify.onLog = { [weak self] in self?.add($0) }
+        fsPanel.onLog = { [weak self] in self?.add($0) }
         mouse.onCount = { [weak self] in self?.add("Mouse events seen so far: \($0)") }
     }
     func add(_ s: String) { log.append("• " + s) }
@@ -26,7 +27,7 @@ final class DiagModel: ObservableObject {
     }
     func fsToggle() {
         let on = fsPanel.toggle()
-        add("(e) Red test bar is \(on ? "ON — now put another app (e.g. Safari) into full screen and see if the bar disappears" : "OFF")")
+        add("(e) Red test bar is \(on ? "ON — now put another app (e.g. Safari) into full screen and watch the log: the app now checks for full-screen windows and hides the bar if it finds one" : "OFF")")
     }
 }
 

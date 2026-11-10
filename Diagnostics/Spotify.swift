@@ -49,11 +49,11 @@ final class SpotifyProbe {
         guard isRunning else { onLog?("Spotify is not running."); return }
         run("""
         tell application "Spotify"
-          set before to repeating
-          set repeating to not before
-          set after to repeating
-          set repeating to before
-          return "repeat was " & before & ", set to " & after & ", restored"
+          set oldVal to repeating
+          set repeating to (not oldVal)
+          set newVal to repeating
+          set repeating to oldVal
+          return "repeat was " & oldVal & ", changed to " & newVal & ", restored"
         end tell
         """, label: "Repeat toggle test")
     }
