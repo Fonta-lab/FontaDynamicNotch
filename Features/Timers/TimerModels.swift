@@ -52,6 +52,9 @@ struct PersistedState: Codable, Sendable {
     var schemaVersion = 1
     var timers: [TimerPreset] = TimerPreset.defaults
     var selectedTimerID: UUID?
+    var stopwatch = StopwatchState()
+    var counters: [CounterItem] = [CounterItem(name: "Counter")]
+    var selectedCounterID: UUID?
     var lastTool: Tool = .timer
 
     init() {}
@@ -65,6 +68,10 @@ struct PersistedState: Codable, Sendable {
         if t.count < 5 { t += TimerPreset.defaults[t.count...] }
         timers = Array(t.prefix(5))
         selectedTimerID = try? c.decode(UUID.self, forKey: .selectedTimerID)
+        stopwatch = (try? c.decode(StopwatchState.self, forKey: .stopwatch)) ?? d.stopwatch
+        let cs = (try? c.decode([CounterItem].self, forKey: .counters)) ?? d.counters
+        counters = cs.isEmpty ? d.counters : cs      // at least one counter always exists
+        selectedCounterID = try? c.decode(UUID.self, forKey: .selectedCounterID)
         lastTool = (try? c.decode(Tool.self, forKey: .lastTool)) ?? d.lastTool
     }
 }

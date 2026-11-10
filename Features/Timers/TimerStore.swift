@@ -171,12 +171,14 @@ final class ToolState {
         }
     }
 
-    /// On open: a running timer wins (the one ending first), then a running stopwatch (M7),
+    /// On open: a running timer wins (the one ending first), then a running stopwatch,
     /// otherwise the last tool used (SPEC §4.3).
     func prepareForOpen() {
         if let r = TimerStore.shared.soonestRunning {
             selected = .timer
             TimerStore.shared.selectedID = r.preset.id
+        } else if StopwatchStore.shared.isRunning {
+            selected = .stopwatch
         } else {
             selected = lastUsed
         }

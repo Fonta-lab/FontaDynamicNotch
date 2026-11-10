@@ -45,21 +45,29 @@ struct ClosedWingsView: View {
     }
 }
 
-/// The running time in the closed right wing. Updates once a second, only while visible.
+/// The running time in the closed right wing: the timer ending first, otherwise the running
+/// stopwatch (without centiseconds). Updates once a second, only while visible.
 struct ClosedTimeView: View {
     let theme: Theme
     private var timers: TimerStore { .shared }
+    private var stopwatch: StopwatchStore { .shared }
 
     var body: some View {
         TimelineView(.periodic(from: .now, by: 1)) { ctx in
-            if let r = timers.soonestRunning {
-                Text(TimeFormat.countdown(r.endDate.timeIntervalSince(ctx.date)))
+            if let text = text(at: ctx.date) {
+                Text(text)
                     .font(.system(size: 12, weight: .semibold).monospacedDigit())
                     .foregroundStyle(theme.primaryText)
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
             }
         }
+    }
+
+    private func text(at date: Date) -> String? {
+        if let r = timers.soonestRunning { return TimeFormat.countdown(r.endDate.timeIntervalSince(date)) }
+        if stopwatch.isRunning { return StopwatchFormat.coarse(stopwatch.elapsed(at: date)) }
+        return nil
     }
 }
 

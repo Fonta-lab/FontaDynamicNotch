@@ -1,6 +1,6 @@
 import Foundation
 
-/// Loads and saves state.json (timers, last tool; stopwatch and counters in M7).
+/// Loads and saves state.json (timers, stopwatch, counters, last tool).
 /// Saves are debounced 0.5 s and written off the main thread; also written on quit and before sleep.
 @MainActor
 final class StateStore {
@@ -20,6 +20,8 @@ final class StateStore {
         // Mark loaded first, so changes made while restoring (missed timers reset to idle) get saved.
         loaded = true
         ToolState.shared.restore(state.lastTool)
+        StopwatchStore.shared.restore(state.stopwatch)
+        CounterStore.shared.restore(state.counters, selectedID: state.selectedCounterID)
         TimerStore.shared.restore(state.timers, selectedID: state.selectedTimerID)
     }
 
@@ -45,6 +47,9 @@ final class StateStore {
         var s = PersistedState()
         s.timers = TimerStore.shared.presets
         s.selectedTimerID = TimerStore.shared.selectedID
+        s.stopwatch = StopwatchStore.shared.state
+        s.counters = CounterStore.shared.counters
+        s.selectedCounterID = CounterStore.shared.selectedID
         s.lastTool = ToolState.shared.lastUsed
         return s
     }

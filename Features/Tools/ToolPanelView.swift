@@ -13,8 +13,8 @@ struct ToolPanelView: View {
             Group {
                 switch tools.selected {
                 case .timer: TimerPanelView(theme: theme)
-                case .stopwatch: comingSoon("Stopwatch", "M7")
-                case .counter: comingSoon("Counter", "M7")
+                case .stopwatch: StopwatchPanelView(theme: theme)
+                case .counter: CounterPanelView(theme: theme)
                 }
             }
             .padding(10)
@@ -22,13 +22,6 @@ struct ToolPanelView: View {
             .id(tools.selected)
         }
         .animation(spring, value: tools.selected)
-    }
-
-    private func comingSoon(_ name: String, _ milestone: String) -> some View {
-        Text("\(name) arrives in \(milestone)")
-            .font(.system(size: 11))
-            .foregroundStyle(theme.secondaryText)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 
@@ -41,7 +34,7 @@ struct ToolButtonsView: View {
     var body: some View {
         HStack(spacing: 4) {
             button(.timer, "timer", running: timers.anyRunning)
-            button(.stopwatch, "stopwatch", running: false)
+            button(.stopwatch, "stopwatch", running: StopwatchStore.shared.isRunning)
             button(.counter, "plusminus", running: false)
         }
     }

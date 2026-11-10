@@ -42,9 +42,9 @@ final class NotchViewModel {
     /// What the right wing shows.
     enum RightWing { case none, bars, time }
 
-    /// A running timer (or, in M7, stopwatch) beats the bars.
+    /// A running timer or stopwatch beats the bars.
     var rightWingContent: RightWing {
-        if TimerStore.shared.anyRunning { return .time }
+        if TimerStore.shared.anyRunning || StopwatchStore.shared.isRunning { return .time }
         return SpotifyService.shared.isMusicActive ? .bars : .none
     }
 
