@@ -23,6 +23,9 @@ final class NotchViewModel {
     var isMouseInside = false
     var isOpen = false
     var closeBlockers: Set<CloseBlocker> = []
+    /// Bumped when the user clicks outside the notch, so popups (output list) close.
+    var dismissToken = 0
+    @ObservationIgnored var blockerHandler: ((CloseBlocker, Bool) -> Void)?
 
     init(geometry: NotchGeometry, screenName: String, isBuiltin: Bool, settings: AppSettings) {
         self.geometry = geometry

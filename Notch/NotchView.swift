@@ -46,6 +46,9 @@ struct NotchView: View {
             if model.showDebugOverlay { DebugOverlayView(model: model) }
         }
         .frame(width: g.panelFrame.width, height: g.panelFrame.height, alignment: .topLeading)
+        .environment(\.notchActions, NotchActions(
+            setCloseBlocker: { [model] blocker, on in model.blockerHandler?(blocker, on) },
+            dismissToken: model.dismissToken))
     }
 
     private var backgroundColor: Color? {

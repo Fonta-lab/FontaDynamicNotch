@@ -24,6 +24,7 @@ final class NotchController {
         host.sizingOptions = []
         panel.contentView = host
         panel.onRightMouseDown = { [weak self] event in self?.showContextMenu(event) }
+        model.blockerHandler = { [weak self] blocker, on in self?.setBlocker(blocker, on) }
         panel.orderFrontRegardless()
     }
 
@@ -60,8 +61,12 @@ final class NotchController {
     }
 
     func mouseDown(at p: NSPoint) {
-        guard model.isOpen, globalActiveRect?.contains(p) == true else { return }
-        setBlocker(.mouseDown, true)
+        guard model.isOpen else { return }
+        if globalActiveRect?.contains(p) == true {
+            setBlocker(.mouseDown, true)
+        } else if model.closeBlockers.contains(.outputList) {
+            model.dismissToken += 1     // click outside: close the output list (then the notch closes)
+        }
     }
 
     func mouseUp() {
@@ -142,6 +147,7 @@ final class NotchController {
         if hidden {
             cancelOpen()
             model.closeBlockers.remove(.mouseDown)
+            model.dismissToken += 1
             model.isOpen = false
             setAcceptsMouse(false)
         }
