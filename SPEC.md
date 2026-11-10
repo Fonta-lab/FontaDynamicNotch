@@ -158,7 +158,7 @@ Do **not** close while:
 - **Right tool panel on open:** the running timer/stopwatch if any (same priority as §4.1), otherwise the last tool used.
 
 ### 4.4 Background & shadow (open state)
-- If artwork exists: background = **dominant color of the cover** (§5.4). It **fades into pure black around the real notch**, as if the physical notch cast a dark shadow downward. Implementation: black base, dominant-color layer on top, masked by an elliptical/rounded-rect gradient that is fully transparent over the notch rect and feathers out over `notchBlendRadius` (theme setting, default 60 pt [Guess]).
+- If artwork exists: background = **dominant color of the cover** (§5.4). It **fades into pure black around the real notch**, as if the physical notch cast a dark shadow downward. Implementation: black base, dominant-color layer on top, masked by a short rectangular fade that follows the notch shape: fully transparent over the notch rect, reaching full colour after `notchBlendRadius` (theme setting, default ≈ ⅔ of the notch height, 21 pt — user's choice after M3).
 - No artwork / nothing playing: background = theme's fallback color (default **pure black**).
 - Outer shadow under the open notch: theme setting (default black, opacity 0.35, radius 12, y-offset 4 [Guess]), similar to Boring Notch's faint shadow.
 - Closed state is always pure black (no tint), so it blends with the notch.

@@ -15,7 +15,7 @@ struct Theme: Equatable, Sendable {
     var useArtworkColor = true
     var artworkIntensity: Double = 1.0
     var minTextContrast: Double = 4.5          // "max background brightness"
-    var notchBlendRadius: CGFloat = 60
+    var notchBlendRadius: CGFloat = 21          // ≈ ⅔ of the notch height (user choice)
 
     // Corner rounding [Guess]
     var topFilletRadius: CGFloat = 12
