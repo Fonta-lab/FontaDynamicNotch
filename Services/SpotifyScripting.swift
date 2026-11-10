@@ -84,29 +84,29 @@ final class SpotifyScripting: @unchecked Sendable {
 
     static let readState = """
     tell application "Spotify"
-      set st to player state as string
-      set pos to 0
+      set vState to player state as string
+      set vPos to 0
       try
-        set pos to player position
+        set vPos to player position
       end try
-      set sh to shuffling
-      set rp to repeating
-      set tid to ""
-      set tn to ""
-      set ta to ""
-      set tal to ""
-      set td to 0
-      set au to ""
+      set vShuffle to shuffling
+      set vRepeat to repeating
+      set vID to ""
+      set vName to ""
+      set vArtist to ""
+      set vAlbum to ""
+      set vDur to 0
+      set vArt to ""
       try
-        set ct to current track
-        set tid to id of ct
-        set tn to name of ct
-        set ta to artist of ct
-        set tal to album of ct
-        set td to duration of ct
-        set au to artwork url of ct
+        set vTrack to current track
+        set vID to id of vTrack
+        set vName to name of vTrack
+        set vArtist to artist of vTrack
+        set vAlbum to album of vTrack
+        set vDur to duration of vTrack
+        set vArt to artwork url of vTrack
       end try
-      return {st, pos, sh, rp, tid, tn, ta, tal, td, au}
+      return {vState, vPos, vShuffle, vRepeat, vID, vName, vArtist, vAlbum, vDur, vArt}
     end tell
     """
 

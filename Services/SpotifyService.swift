@@ -1,5 +1,8 @@
 import AppKit
 import Observation
+import os
+
+private let log = Logger(subsystem: "com.fonta.dynamicnotch", category: "spotify")
 
 /// Now playing + transport for Spotify. Event-driven: it updates on Spotify's PlaybackStateChanged
 /// notification and on launch/quit; it never polls while the notch is closed.
@@ -65,6 +68,7 @@ final class SpotifyService {
             let stateText = (info["Player State"] as? String)?.lowercased() ?? ""
             let pos = info["Playback Position"] as? Double
             let trackID = info["Track ID"] as? String
+            log.notice("playback notification: \(stateText, privacy: .public)")
             MainActor.assumeIsolated { self?.playbackChanged(stateText: stateText, position: pos, trackID: trackID) }
         })
         if isRunning { refresh() }
@@ -98,6 +102,7 @@ final class SpotifyService {
     // MARK: Refresh
 
     func refresh() {
+        log.notice("refresh requested, running=\(SpotifyScripting.isSpotifyRunning, privacy: .public)")
         guard SpotifyScripting.isSpotifyRunning else { isRunning = false; return }
         Task {
             let result = await scripting.run(SpotifyScripting.readState, parse: SpotifyScripting.parseState)
@@ -108,14 +113,17 @@ final class SpotifyService {
     private func handle(_ result: Result<SpotifySnapshot, SpotifyScriptError>) {
         switch result {
         case .success(let snap):
+            log.notice("read ok: state=\(snap.state.rawValue, privacy: .public) track=\(snap.track?.name ?? "nil", privacy: .public) art=\(snap.track?.artworkURL?.absoluteString ?? "nil", privacy: .public)")
             permissionDenied = false
             apply(snap)
         case .failure(.permissionDenied):
+            log.notice("read: permission denied")
             permissionDenied = true
         case .failure(.notRunning):
+            log.notice("read: not running")
             isRunning = false
         case .failure(let e):
-            NSLog("Spotify script failed: \(e)")
+            log.error("read failed: \(String(describing: e), privacy: .public)")
         }
     }
 
