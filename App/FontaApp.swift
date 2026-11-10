@@ -18,9 +18,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         setUpStatusItem()
-        Task {
+        Task { [weak self] in
+            guard let self else { return }
             await settings.load()
-            let manager = ScreenManager(settingsStore: settings)
+            let manager = ScreenManager(settingsStore: settings) { [weak self] in self?.makeMenu() ?? NSMenu() }
             manager.start()
             screenManager = manager
         }
@@ -39,6 +40,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.delegate = self
         item.menu = menu
         statusItem = item
+    }
+
+    /// The same menu, for right-clicking the open notch.
+    func makeMenu() -> NSMenu {
+        let menu = NSMenu()
+        menuNeedsUpdate(menu)
+        return menu
     }
 
     /// Rebuilt each time it opens so checkmarks are current.

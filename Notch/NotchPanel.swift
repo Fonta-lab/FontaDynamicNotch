@@ -19,6 +19,16 @@ final class NotchPanel: NSPanel {
         animationBehavior = .none
     }
 
+    var onRightMouseDown: ((NSEvent) -> Void)?
+
+    override func sendEvent(_ event: NSEvent) {
+        if event.type == .rightMouseDown, let handler = onRightMouseDown {
+            handler(event)
+            return
+        }
+        super.sendEvent(event)
+    }
+
     override var canBecomeKey: Bool { false }
     override var canBecomeMain: Bool { false }
 

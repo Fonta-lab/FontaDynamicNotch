@@ -13,8 +13,11 @@ final class ScreenManager {
     /// False when the lid is closed (no built-in display connected). Used in M5 for brightness buttons.
     private(set) var builtinScreenPresent = true
 
-    init(settingsStore: SettingsStore) {
+    private let menuProvider: @MainActor () -> NSMenu
+
+    init(settingsStore: SettingsStore, menuProvider: @escaping @MainActor () -> NSMenu) {
         self.settingsStore = settingsStore
+        self.menuProvider = menuProvider
     }
 
     func start() {
@@ -30,7 +33,16 @@ final class ScreenManager {
             for (id, isFull) in result { self.controllers[id]?.setFullscreenHidden(isFull) }
             self.mouseMoved(to: NSEvent.mouseLocation)
         }
-        mouse.start { [weak self] p in self?.mouseMoved(to: p) }
+        mouse.start { [weak self] kind, p in
+            guard let self else { return }
+            for c in self.controllers.values {
+                switch kind {
+                case .moved: c.mouseMoved(to: p)
+                case .down: c.mouseDown(at: p)
+                case .up: c.mouseUp()
+                }
+            }
+        }
         rebuild()
         fullscreen.start()
         observeSettings()
@@ -76,18 +88,14 @@ final class ScreenManager {
             if let c = controllers[id] {
                 c.update(screen: screen, geometry: g, settings: settings)
             } else {
-                controllers[id] = NotchController(displayID: id, screen: screen, geometry: g, settings: settings)
+                controllers[id] = NotchController(displayID: id, screen: screen, geometry: g, settings: settings, menuProvider: menuProvider)
             }
         }
         mouseMoved(to: NSEvent.mouseLocation)
     }
 
-    /// Click-through: a panel takes the mouse only while the cursor is inside its visible notch.
+    /// Click-through and hover: each panel decides from the cursor position.
     private func mouseMoved(to p: NSPoint) {
-        for c in controllers.values {
-            // Expand by 1 pt so the very top pixel row of the screen counts as inside.
-            let inside = c.globalHotZone.map { $0.insetBy(dx: 0, dy: -1).contains(p) } ?? false
-            c.setMouseInside(inside)
-        }
+        for c in controllers.values { c.mouseMoved(to: p) }
     }
 }
