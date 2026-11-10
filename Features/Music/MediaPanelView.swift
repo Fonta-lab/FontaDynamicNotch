@@ -120,9 +120,11 @@ struct MediaPanelView: View {
 struct NotchButtonStyle: ButtonStyle {
     let radius: CGFloat
     var filled = false
+    /// Extra inner padding for filled buttons. Off when the label sets its own size (tool panels).
+    var padded = true
 
     func makeBody(configuration: Configuration) -> some View {
-        NotchButtonBody(configuration: configuration, radius: radius, filled: filled)
+        NotchButtonBody(configuration: configuration, radius: radius, filled: filled, padded: padded)
     }
 }
 
@@ -131,12 +133,13 @@ private struct NotchButtonBody: View {
     let configuration: ButtonStyleConfiguration
     let radius: CGFloat
     let filled: Bool
+    let padded: Bool
     @State private var hovering = false
 
     var body: some View {
         configuration.label
-            .padding(.horizontal, filled ? 12 : 0)
-            .padding(.vertical, filled ? 5 : 0)
+            .padding(.horizontal, filled && padded ? 12 : 0)
+            .padding(.vertical, filled && padded ? 5 : 0)
             .background(
                 RoundedRectangle(cornerRadius: radius, style: .continuous)
                     .fill(Color.white.opacity(configuration.isPressed ? 0.22 : hovering ? (filled ? 0.18 : 0.12) : (filled ? 0.1 : 0)))

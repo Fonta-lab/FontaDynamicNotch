@@ -57,32 +57,14 @@ struct TimerPanelView: View {
     }
 
     private func controls(_ p: TimerPreset) -> some View {
-        let label: String
-        let symbol: String
-        switch p.run {
-        case .running: label = "Pause"; symbol = "pause.fill"
-        case .paused: label = "Resume"; symbol = "play.fill"
-        default: label = "Start"; symbol = "play.fill"
+        let (help, symbol): (String, String) = switch p.run {
+        case .running: ("Pause", "pause.fill")
+        case .paused: ("Resume", "play.fill")
+        default: ("Start", "play.fill")
         }
         return HStack(spacing: 6) {
-            Button { store.toggle(p.id) } label: {
-                Label(label, systemImage: symbol)
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(theme.primaryText)
-                    .frame(maxWidth: .infinity, minHeight: 24)
-            }
-            .buttonStyle(NotchButtonStyle(radius: theme.buttonRadius, filled: true))
-            .disabled(p.isRinging)
-
-            Button { store.reset(p.id) } label: {
-                Image(systemName: "arrow.counterclockwise")
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(theme.primaryText.opacity(p.run == .idle ? 0.35 : 1))
-                    .frame(width: 30, height: 24)
-            }
-            .buttonStyle(NotchButtonStyle(radius: theme.buttonRadius, filled: true))
-            .disabled(p.run == .idle)
-            .help("Reset")
+            PanelButton(theme: theme, symbol: symbol, enabled: !p.isRinging, help: help) { store.toggle(p.id) }
+            PanelButton(theme: theme, symbol: "arrow.counterclockwise", enabled: p.run != .idle, help: "Reset") { store.reset(p.id) }
         }
     }
 
