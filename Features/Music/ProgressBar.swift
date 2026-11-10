@@ -54,7 +54,7 @@ struct ProgressBar: View {
             )
         }
         .frame(height: max(theme.knobSize, 12))
-        .notchHover { hovering = $0 }
+        .onHover { hovering = $0 }
         .animation(.easeOut(duration: 0.15), value: hovering)
     }
 

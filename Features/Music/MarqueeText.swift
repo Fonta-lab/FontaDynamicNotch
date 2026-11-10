@@ -38,7 +38,7 @@ struct MarqueeText: View {
         )
         .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { boxWidth = $0 }
         .contentShape(Rectangle())
-        .notchHover { hoverStart = $0 ? Date() : nil }
+        .onHover { hoverStart = $0 ? Date() : nil }
         .onChange(of: text) { hoverStart = hoverStart == nil ? nil : Date() }
     }
 

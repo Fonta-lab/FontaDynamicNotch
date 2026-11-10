@@ -92,18 +92,31 @@ struct MediaPanelView: View {
 struct NotchButtonStyle: ButtonStyle {
     let radius: CGFloat
     var filled = false
-    @State private var hovering = false
 
     func makeBody(configuration: Configuration) -> some View {
+        NotchButtonBody(configuration: configuration, radius: radius, filled: filled)
+    }
+}
+
+/// Holds the hover state in a real view (state stored on a ButtonStyle isn't reliably kept).
+private struct NotchButtonBody: View {
+    let configuration: ButtonStyleConfiguration
+    let radius: CGFloat
+    let filled: Bool
+    @State private var hovering = false
+
+    var body: some View {
         configuration.label
             .padding(.horizontal, filled ? 12 : 0)
             .padding(.vertical, filled ? 5 : 0)
             .background(
                 RoundedRectangle(cornerRadius: radius, style: .continuous)
-                    .fill(Color.white.opacity(configuration.isPressed ? 0.2 : (hovering || filled) ? 0.1 : 0))
+                    .fill(Color.white.opacity(configuration.isPressed ? 0.22 : hovering ? (filled ? 0.18 : 0.12) : (filled ? 0.1 : 0)))
             )
             .scaleEffect(configuration.isPressed ? 0.94 : 1)
-            .notchHover { hovering = $0 }
+            .contentShape(Rectangle())
+            .onHover { hovering = $0 }
+            .animation(.easeOut(duration: 0.12), value: hovering)
             .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
     }
 }
