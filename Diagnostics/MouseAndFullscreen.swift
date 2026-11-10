@@ -40,7 +40,8 @@ final class FullscreenProbePanel {
                   (w[kCGWindowOwnerPID as String] as? Int32) != mine,
                   let b = w[kCGWindowBounds as String] as? [String: CGFloat] else { continue }
             let r = CGRect(x: b["X"] ?? 0, y: b["Y"] ?? 0, width: b["Width"] ?? 0, height: b["Height"] ?? 0)
-            if r.width >= cgFrame.width - 1 && r.height >= cgFrame.height - 1 && abs(r.minX - cgFrame.minX) < 2 && abs(r.minY - cgFrame.minY) < 2 { return true }
+            let slack = screen.safeAreaInsets.top + 2
+            if r.width >= cgFrame.width - 1 && r.height >= cgFrame.height - slack && abs(r.minX - cgFrame.minX) < 2 && r.minY - cgFrame.minY <= slack { return true }
         }
         return false
     }
@@ -56,11 +57,24 @@ final class FullscreenProbePanel {
         observers.append(NSWorkspace.shared.notificationCenter.addObserver(forName: NSWorkspace.didActivateApplicationNotification, object: nil, queue: .main, using: check))
     }
 
+    static func dump(_ screen: NSScreen) -> String {
+        guard let list = CGWindowListCopyWindowInfo([.optionOnScreenOnly], kCGNullWindowID) as? [[String: Any]] else { return "no list" }
+        var out = "screen frame=\(screen.frame) visible=\(screen.visibleFrame) safeTop=\(screen.safeAreaInsets.top)\n"
+        for w in list {
+            let layer = w[kCGWindowLayer as String] as? Int ?? -1
+            let b = w[kCGWindowBounds as String] as? [String: CGFloat] ?? [:]
+            if layer == 0 && (b["Width"] ?? 0) < 400 { continue }
+            out += "  layer \(layer) \(w[kCGWindowOwnerName as String] ?? "?") '\(w[kCGWindowName as String] ?? "")' x=\(Int(b["X"] ?? 0)) y=\(Int(b["Y"] ?? 0)) w=\(Int(b["Width"] ?? 0)) h=\(Int(b["Height"] ?? 0))\n"
+        }
+        return out
+    }
+
     private func evaluate() {
         guard let panel, let screen = NSScreen.main ?? NSScreen.screens.first else { return }
         let fs = Self.screenHasFullscreenWindow(screen)
         let menuBarGone = (screen.frame.maxY - screen.visibleFrame.maxY) < 1
         onLog?("(e) Fallback check: full-screen window detected = \(fs); menu bar hidden by visibleFrame = \(menuBarGone). Bar \(fs ? "hidden" : "shown").")
+        onLog?("(e) Window dump:\n" + Self.dump(screen))
         if fs { panel.orderOut(nil) } else { panel.orderFrontRegardless() }
     }
 
