@@ -1,0 +1,33 @@
+name: FontaDynamicNotch
+options:
+  bundleIdPrefix: com.fonta
+  deploymentTarget:
+    macOS: "26.0"
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    MARKETING_VERSION: "0.1"
+    CURRENT_PROJECT_VERSION: "1"
+targets:
+  FontaDynamicNotch:
+    type: application
+    platform: macOS
+    sources: [App, Diagnostics]
+    info:
+      path: App/Info.plist
+      properties:
+        CFBundleDisplayName: "Fonta's Dynamic Notch"
+        LSUIElement: true
+        NSAppleEventsUsageDescription: "Used to show and control what's playing in Spotify."
+    entitlements:
+      path: App/FontaDynamicNotch.entitlements
+      properties:
+        com.apple.security.automation.apple-events: true
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.fonta.dynamicnotch
+        ENABLE_HARDENED_RUNTIME: YES
+        CODE_SIGN_STYLE: Automatic
+        # M0: no Personal Team certificate yet, so ad-hoc signing for now.
+        CODE_SIGN_IDENTITY: "-"
+        ENABLE_APP_SANDBOX: NO
