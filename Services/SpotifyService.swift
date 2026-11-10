@@ -219,13 +219,19 @@ final class SpotifyService {
     }
 
     private func send(_ source: String, cache: Bool = true, refreshAfter: Bool = false) {
+        let name = source.replacingOccurrences(of: "tell application \"Spotify\" to ", with: "")
+        log.notice("command pressed: \(name, privacy: .public)")
         guard SpotifyScripting.isSpotifyRunning else { isRunning = false; return }
         Task {
             let r = await scripting.command(source, cache: cache)
             switch r {
-            case .failure(.permissionDenied): permissionDenied = true
-            case .failure(let e): NSLog("Spotify command failed: \(e)")
-            case .success: break
+            case .failure(.permissionDenied):
+                log.notice("command \(name, privacy: .public): permission denied")
+                permissionDenied = true
+            case .failure(let e):
+                log.error("command \(name, privacy: .public) failed: \(String(describing: e), privacy: .public)")
+            case .success:
+                log.notice("command \(name, privacy: .public): ok")
             }
             // Shuffle/repeat don't post a playback notification, so read back the real value.
             if refreshAfter {

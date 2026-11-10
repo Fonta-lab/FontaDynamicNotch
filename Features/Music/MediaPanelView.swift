@@ -103,7 +103,7 @@ struct NotchButtonStyle: ButtonStyle {
                     .fill(Color.white.opacity(configuration.isPressed ? 0.2 : (hovering || filled) ? 0.1 : 0))
             )
             .scaleEffect(configuration.isPressed ? 0.94 : 1)
-            .onHover { hovering = $0 }
+            .notchHover { hovering = $0 }
             .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
     }
 }

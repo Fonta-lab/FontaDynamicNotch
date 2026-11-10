@@ -24,7 +24,7 @@ struct NotchView: View {
                         radius: t.shadowRadius, y: t.shadowYOffset)
 
             ZStack(alignment: .topLeading) {
-                NotchBackgroundView(geometry: g, theme: t, color: backgroundColor)
+                NotchBackgroundView(theme: t, color: backgroundColor)
                     .opacity(open ? 1 : 0)   // closed is always pure black
 
                 if open {

@@ -158,7 +158,7 @@ Do **not** close while:
 - **Right tool panel on open:** the running timer/stopwatch if any (same priority as §4.1), otherwise the last tool used.
 
 ### 4.4 Background & shadow (open state)
-- If artwork exists: background = **dominant color of the cover** (§5.4). It **fades into pure black around the real notch**, as if the physical notch cast a dark shadow downward. Implementation: black base, dominant-color layer on top, masked by a short rectangular fade that follows the notch shape: fully transparent over the notch rect, reaching full colour after `notchBlendRadius` (theme setting, default ≈ ⅔ of the notch height, 21 pt — user's choice after M3).
+- If artwork exists: background = **dominant color of the cover** (§5.4), filling the whole open shape. **No fade around the notch** (removed at the user's request after M3; the earlier oval and short-rectangle fades were tried and rejected).
 - No artwork / nothing playing: background = theme's fallback color (default **pure black**).
 - Outer shadow under the open notch: theme setting (default black, opacity 0.35, radius 12, y-offset 4 [Guess]), similar to Boring Notch's faint shadow.
 - Closed state is always pure black (no tint), so it blends with the notch.
@@ -296,7 +296,7 @@ A macOS-style window (SwiftUI, sidebar navigation like System Settings). Changes
 
 1. **General:** launch at login (toggle), show notch on all screens / main display only, show fake notch when idle, menu-bar icon on/off, hover-open delay, close delay, "paused music stays visible for N minutes".
 2. **Appearance › Themes:** theme list; built-in "Default" (read-only) + user themes; create, duplicate, rename, delete; **export/import as JSON**. A theme contains:
-   - **Colors:** fallback background, primary text, secondary text, accent, icon color, slider track, slider fill, slider knob, use-artwork-color toggle, artwork intensity, max background brightness, notch blend radius.
+   - **Colors:** fallback background, primary text, secondary text, accent, icon color, slider track, slider fill, slider knob, use-artwork-color toggle, artwork intensity, max background brightness.
    - **Corner rounding:** top fillet radius, open bottom radius, closed bottom radius, cover radius (open), cover radius (closed), button radius.
    - **Shadow:** on/off, color, opacity, radius, y-offset.
    - **Icon size** (top bar and controls separately).
@@ -367,7 +367,7 @@ Each milestone ends with a build the user runs, plus a short checklist of what t
 - **M0 – Setup & risk checks.** Install XcodeGen, generate the project, signing with the Personal Team, git init. Small test harness (debug menu) that checks on macOS 27.2.1: (a) display brightness get/set, (b) keyboard backlight get/set, (c) Spotify AppleScript read/control + PlaybackStateChanged notification + whether repeat is boolean, (d) global mouse-moved monitor without extra permission, (e) panel hidden in full-screen Spaces without `.fullScreenAuxiliary`. **Report results to the user before continuing.**
 - **M1 – Notch window & geometry.** Panel per screen, real/fake notch, debug overlay, hot-plug, lid-closed detection, full-screen hiding, click-through.
 - **M2 – Hover & shape.** Notch shape with top fillets, closed↔open springs, 0.1 s hover delay, instant close, the close-blocking rules from §4.2, shadow.
-- **M3 – Spotify.** SpotifyService, Home tab media UI, closed wings (cover + bars), dominant-color background with the notch blend.
+- **M3 – Spotify.** SpotifyService, Home tab media UI, closed wings (cover + bars), dominant-color background (no notch fade).
 - **M4 – Audio.** Volume slider, mute, output-device dropdown, listeners.
 - **M5 – Brightness.** Screen + keyboard hover-to-slider controls, feature flags, per-screen/lid rules.
 - **M6 – Timers & alarm.** 5 presets, chips, start/pause/reset, concurrent timers, alarm sound and auto-open, persistence and reboot rules, closed-state time priority.
