@@ -52,7 +52,6 @@ On first launch macOS will ask permission to control Spotify (Automation) and to
 
 - The App Sandbox is off: Spotify scripting, brightness control and trashing files need it.
 - Brightness and keyboard backlight use private macOS APIs and are hidden automatically when unavailable.
-- Built with [Claude Code](https://claude.com/claude-code). `SPEC.md` is the full product and technical spec.
 
 ## License
 
