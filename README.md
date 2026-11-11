@@ -25,7 +25,7 @@ The Xcode project is generated from `project.yml`.
 
 ```sh
 brew install xcodegen
-git clone https://github.com/<your-username>/FontaDynamicNotch.git
+git clone https://github.com/Fonta-lab/FontaDynamicNotch.git
 cd FontaDynamicNotch
 xcodegen generate
 open FontaDynamicNotch.xcodeproj
