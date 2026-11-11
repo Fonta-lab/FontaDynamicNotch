@@ -2,24 +2,30 @@ import Foundation
 import Observation
 
 /// The built-in Default theme plus the user's themes (one JSON file each in themes/).
-/// The selected theme applies live to every notch.
+/// The built-in theme can be edited in place: the edited copy is saved as themes/<built-in id>.json
+/// and "Reset" brings back the original. The selected theme applies live to every notch.
 @MainActor @Observable
 final class ThemeStore {
     static let shared = ThemeStore()
 
     private(set) var userThemes: [Theme] = []
+    /// Edited versions of the built-in themes, by id.
+    private(set) var builtInEdits: [String: Theme] = [:]
     @ObservationIgnored private var saveTasks: [String: Task<Void, Never>] = [:]
 
     private init() {}
 
     nonisolated static var folder: URL { JSONFile.folder.appendingPathComponent("themes", isDirectory: true) }
 
-    var all: [Theme] { [Theme.default] + userThemes }
+    /// Built-in themes with the user's edits applied.
+    var builtIns: [Theme] { Theme.builtIns.map { builtInEdits[$0.id] ?? $0 } }
+
+    var all: [Theme] { builtIns + userThemes }
 
     /// The theme the notch uses right now.
     var current: Theme {
         let id = SettingsStore.shared.settings.selectedThemeID
-        return userThemes.first { $0.id == id } ?? .default
+        return builtIns.first { $0.id == id } ?? userThemes.first { $0.id == id } ?? builtIns[0]
     }
 
     func load() async {
@@ -31,17 +37,18 @@ final class ThemeStore {
                 return try? JSONDecoder().decode(Theme.self, from: data)
             }
         }.value
+        builtInEdits = Dictionary(themes.filter(\.isBuiltIn).map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
         userThemes = themes.filter { !$0.isBuiltIn }.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
     }
 
     // MARK: Editing
 
-    /// Creates a copy of a theme (the way to "edit" the read-only Default) and selects it.
+    /// Creates a copy of a theme and selects it.
     @discardableResult
     func duplicate(_ theme: Theme) -> Theme {
         var t = theme
         t.id = UUID().uuidString
-        t.name = uniqueName(theme.isBuiltIn ? "My theme" : "\(theme.name) copy")
+        t.name = uniqueName(theme.id == Theme.defaultID ? "My theme" : "\(theme.name) copy")
         userThemes.append(t)
         save(t)
         SettingsStore.shared.settings.selectedThemeID = t.id
@@ -49,10 +56,30 @@ final class ThemeStore {
     }
 
     func update(_ theme: Theme) {
-        guard !theme.isBuiltIn, let i = userThemes.firstIndex(where: { $0.id == theme.id }) else { return }
+        if theme.isBuiltIn {
+            guard builtIns.first(where: { $0.id == theme.id }) != theme else { return }
+            builtInEdits[theme.id] = theme
+            save(theme)
+            return
+        }
+        guard let i = userThemes.firstIndex(where: { $0.id == theme.id }) else { return }
         guard userThemes[i] != theme else { return }
         userThemes[i] = theme
         save(theme)
+    }
+
+    /// True if a built-in theme was edited.
+    func isEdited(_ id: String) -> Bool {
+        guard let edit = builtInEdits[id] else { return false }
+        return Theme.builtIns.first { $0.id == id } != edit
+    }
+
+    /// Brings a built-in theme back to its original values.
+    func resetBuiltIn(_ id: String) {
+        guard builtInEdits.removeValue(forKey: id) != nil else { return }
+        saveTasks[id]?.cancel()
+        let url = Self.folder.appendingPathComponent("\(id).json")
+        Task.detached(priority: .utility) { try? FileManager.default.removeItem(at: url) }
     }
 
     func delete(_ id: String) {

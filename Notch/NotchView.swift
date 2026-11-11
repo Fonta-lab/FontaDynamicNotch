@@ -4,6 +4,7 @@ struct NotchView: View {
     let model: NotchViewModel
     private var settings: AppSettings { SettingsStore.shared.settings }
     private var spotify: SpotifyService { .shared }
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         let g = model.geometry
@@ -20,15 +21,11 @@ struct NotchView: View {
         let shape = NotchShape(left: left, right: right, height: height, topRadius: topR, bottomRadius: bottomR)
 
         ZStack(alignment: .topLeading) {
-            shape
-                .fill(Color.black)
-                .shadow(color: t.shadowColor.opacity(open && t.shadowEnabled ? t.shadowOpacity : 0),
-                        radius: t.shadowRadius, y: t.shadowYOffset)
+            // Shadow + black/artwork background, or Liquid Glass (Theme.surfaceStyle).
+            NotchSurfaceView(shape: shape, theme: t, isOpen: open,
+                             artwork: spotify.isMusicActive ? spotify.artworkColor : nil)
 
             ZStack(alignment: .topLeading) {
-                NotchBackgroundView(theme: t, color: backgroundColor)
-                    .opacity(open ? 1 : 0)   // closed is always pure black
-
                 if open {
                     OpenContentView(model: model, settings: settings)
                         .frame(width: g.openRect.width, height: g.openRect.height)
@@ -48,6 +45,8 @@ struct NotchView: View {
             if model.showDebugOverlay { DebugOverlayView(model: model) }
         }
         .frame(width: g.panelFrame.width, height: g.panelFrame.height, alignment: .topLeading)
+        // Glass and materials use their dark look, made for white text (same look as the black notch).
+        .environment(\.colorScheme, t.isGlass ? .dark : colorScheme)
         .environment(\.notchActions, NotchActions(
             setCloseBlocker: { [model] blocker, on in model.blockerHandler?(blocker, on) },
             dismissToken: model.dismissToken))
@@ -55,10 +54,6 @@ struct NotchView: View {
 
     private struct WingKey: Equatable { let left: CGFloat; let right: CGFloat }
 
-    private var backgroundColor: Color? {
-        guard model.theme.useArtworkColor, spotify.isMusicActive, let c = spotify.artworkColor else { return nil }
-        return c.scaled(model.theme.artworkIntensity).darkened(toMaxLuminance: model.theme.maxBackgroundLuminance).color
-    }
 }
 
 /// Everything inside the open notch: the top bar and the Home tab (or the alarm while ringing).

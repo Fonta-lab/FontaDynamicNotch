@@ -17,7 +17,7 @@ struct AppearanceSettingsView: View {
                     }
                 }
                 HStack {
-                    Button("New") { themes.duplicate(.default) }
+                    Button("New") { themes.duplicate(.default) }   // always from the original Default
                     Button("Duplicate") { themes.duplicate(themes.current) }
                     Button("Delete…") { confirmDelete = true }
                         .disabled(themes.current.isBuiltIn)
@@ -26,12 +26,18 @@ struct AppearanceSettingsView: View {
                     Button("Export…", action: exportTheme)
                 }
                 if themes.current.isBuiltIn {
-                    Text("The Default theme can't be changed. Click Duplicate to make an editable copy.")
-                        .font(.caption).foregroundStyle(.secondary)
+                    HStack {
+                        Text(themes.isEdited(themes.current.id)
+                             ? "You've edited the built-in theme. Reset brings back its original look."
+                             : "Built-in theme: your changes are kept, and Reset brings back the original.")
+                            .font(.caption).foregroundStyle(.secondary)
+                        Spacer()
+                        Button("Reset to Original") { themes.resetBuiltIn(themes.current.id) }
+                            .disabled(!themes.isEdited(themes.current.id))
+                    }
                 }
             }
             ThemeEditorSections(theme: Binding(get: { themes.current }, set: { themes.update($0) }))
-                .disabled(themes.current.isBuiltIn)
         }
         .confirmationDialog("Delete the theme “\(themes.current.name)”?", isPresented: $confirmDelete) {
             Button("Delete", role: .destructive) { themes.delete(themes.current.id) }
@@ -73,8 +79,9 @@ struct ThemeEditorSections: View {
         Section("Name") {
             TextField("Name", text: $theme.name)
         }
+        SurfaceSettingsSection(theme: $theme)
         Section("Colours") {
-            color("Background (no artwork)", \.fallbackBackgroundColor)
+            color(theme.isGlass ? "Background (solid style only)" : "Background (no artwork)", \.fallbackBackgroundColor)
             color("Primary text", \.primaryTextColor)
             color("Secondary text", \.secondaryTextColor)
             color("Accent", \.accentColor)

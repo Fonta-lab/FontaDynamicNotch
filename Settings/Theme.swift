@@ -31,6 +31,10 @@ struct CodableColor: Codable, Equatable, Sendable {
 
 enum KnobShape: String, Codable, CaseIterable, Sendable { case circle, capsule, none }
 enum SliderFillStyle: String, Codable, CaseIterable, Sendable { case solid, artwork }
+/// What the notch is made of: the classic opaque fill, or Liquid Glass (macOS 26; a blurred material before).
+enum SurfaceStyle: String, Codable, CaseIterable, Sendable { case solid, liquidGlass }
+/// Liquid Glass variant: `regular` adapts to what's behind it; `clear` is more see-through.
+enum GlassVariant: String, Codable, CaseIterable, Sendable { case regular, clear }
 
 /// A visual theme (SPEC §10.2). "Default" is built in and read-only; user themes are saved as
 /// themes/<id>.json. Every key decodes with a default, so old or hand-edited files still load.
@@ -80,9 +84,45 @@ struct Theme: Codable, Equatable, Identifiable, Sendable {
     var knobOnlyOnHover = true
     var sliderFillStyle: SliderFillStyle = .solid
 
-    static let `default` = Theme()
+    // Surface (Liquid Glass). `solid` keeps every existing theme exactly as it was.
+    var surfaceStyle: SurfaceStyle = .solid
+    var glassVariant: GlassVariant = .regular
+    /// false = no tint (the artwork colour can still tint the glass, see `useArtworkColor`).
+    var glassTintEnabled = false
+    var glassTintColor = CodableColor.black
+    /// 0…1. Also the strength of the artwork-colour tint.
+    var glassTintIntensity: Double = 0.35
+    /// How solid the glass is, like macOS's Clear ↔ Tinted slider: 0 = almost fully see-through, 1 = full glass.
+    var glassOpacity: Double = 0.5
+    /// Black layer between the glass and the content, for legibility over bright backgrounds.
+    var glassDimming: Double = 0.1
+    /// Glass in the closed state too. Off: closed stays black like the physical notch.
+    var glassWhenClosed = false
 
-    var isBuiltIn: Bool { id == Theme.defaultID }
+    /// The built-in Default theme. Since v0.3 these are the user's own settings (Liquid Glass).
+    /// `Theme()` keeps the original v0.2 values: they're the fallback for keys missing from a theme
+    /// file, so older or imported themes still load exactly as they were made (solid, black).
+    static let `default`: Theme = {
+        var t = Theme()
+        t.topBarIconSize = 15
+        t.controlIconSize = 19
+        t.sliderHeight = 5
+        t.knobSize = 11
+        t.knobShape = .capsule
+        t.knobOnlyOnHover = false
+        t.sliderTrackColor = CodableColor(r: 0.57, g: 0.57, b: 0.57)
+        t.surfaceStyle = .liquidGlass
+        t.glassVariant = .clear
+        t.glassOpacity = 0.72
+        t.glassDimming = 0.44
+        t.glassTintEnabled = false
+        t.glassTintColor = CodableColor(r: 0.02, g: 0.008, b: 0.004)
+        t.glassTintIntensity = 0.4
+        t.glassWhenClosed = true
+        return t
+    }()
+
+    var isBuiltIn: Bool { Theme.builtInIDs.contains(id) }
 
     // Convenience colours for views
     var fallbackBackground: Color { fallbackBackgroundColor.color }
@@ -132,5 +172,13 @@ struct Theme: Codable, Equatable, Identifiable, Sendable {
         knobShape = v(.knobShape, d.knobShape)
         knobOnlyOnHover = v(.knobOnlyOnHover, d.knobOnlyOnHover)
         sliderFillStyle = v(.sliderFillStyle, d.sliderFillStyle)
+        surfaceStyle = v(.surfaceStyle, d.surfaceStyle)
+        glassVariant = v(.glassVariant, d.glassVariant)
+        glassTintEnabled = v(.glassTintEnabled, d.glassTintEnabled)
+        glassTintColor = v(.glassTintColor, d.glassTintColor)
+        glassTintIntensity = v(.glassTintIntensity, d.glassTintIntensity)
+        glassDimming = v(.glassDimming, d.glassDimming)
+        glassOpacity = v(.glassOpacity, d.glassOpacity)
+        glassWhenClosed = v(.glassWhenClosed, d.glassWhenClosed)
     }
 }

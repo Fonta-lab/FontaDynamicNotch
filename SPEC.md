@@ -161,7 +161,8 @@ Do **not** close while:
 - If artwork exists: background = **dominant color of the cover** (§5.4), filling the whole open shape. **No fade around the notch** (removed at the user's request after M3; the earlier oval and short-rectangle fades were tried and rejected).
 - No artwork / nothing playing: background = theme's fallback color (default **pure black**).
 - Outer shadow under the open notch: theme setting (default black, opacity 0.35, radius 12, y-offset 4 [Guess]), similar to Boring Notch's faint shadow.
-- Closed state is always pure black (no tint), so it blends with the notch.
+- Closed state is always pure black (no tint), so it blends with the notch. Exception (v0.3): a Liquid Glass theme with "Glass also when closed" on.
+- **Liquid Glass surface (v0.3, user request):** a theme's `surfaceStyle` can be `liquidGlass`. On macOS 26+ the notch shape is drawn with `glassEffect` inside a `GlassEffectContainer` (stable `glassEffectID`), its shape animated with the open/close springs; macOS 14/15 fall back to `.ultraThinMaterial`. Options: variant regular/clear, tint (none or colour + intensity; the artwork colour wins while music plays if "Use artwork colour" is on), dimming layer for legibility, glass when closed (default off). Inside the notch the colour scheme is forced to dark. Inner buttons keep their soft highlights (no glass on glass).
 - Text/icons stay legible: the dominant color is darkened until white text passes a contrast ratio of 4.5:1 (setting "Max background brightness").
 
 ---
@@ -295,10 +296,11 @@ Also configurable: hover-open delay (default 0.10 s) and close delay (default 0 
 A macOS-style window (SwiftUI, sidebar navigation like System Settings). Changes apply **live**.
 
 1. **General:** launch at login (toggle), show notch on all screens / main display only, show fake notch when idle, menu-bar icon on/off, hover-open delay, close delay, "paused music stays visible for N minutes".
-2. **Appearance › Themes:** theme list; built-in "Default" (read-only) + user themes; create, duplicate, rename, delete; **export/import as JSON**. A theme contains:
+2. **Appearance › Themes:** theme list; built-in "Default" (since v0.3 its values are the user's own settings: Liquid Glass, clear variant, glass also when closed, capsule knobs; `Theme()` keeps the v0.2 values as fallbacks for missing keys; editable in place since v0.3, with "Reset to Original"; edits saved as themes/default.json; its Surface can be Solid or Liquid Glass, so there is no separate glass theme) + user themes; create, duplicate, rename, delete; **export/import as JSON**. A theme contains:
    - **Colors:** fallback background, primary text, secondary text, accent, icon color, slider track, slider fill, slider knob, use-artwork-color toggle, artwork intensity, max background brightness.
    - **Corner rounding:** top fillet radius, open bottom radius, closed bottom radius, cover radius (open), cover radius (closed), button radius.
    - **Shadow:** on/off, color, opacity, radius, y-offset.
+   - **Surface:** Solid / Liquid Glass, glass variant, transparency (Clear ↔ Tinted), tint + intensity, dimming, glass when closed.
    - **Icon size** (top bar and controls separately).
    - **Sliders:** height, knob size, knob shape (circle / capsule / none), knob visible only on hover, fill style (solid / artwork color).
 3. **Layout & Modules:** drag-to-reorder the left and right top-bar groups; show/hide each module (Home/Files, Screen brightness, Keyboard brightness, Timer, Stopwatch, Counter); open width/height; closed wing width.
