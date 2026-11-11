@@ -86,6 +86,10 @@ final class ScreenManager {
             c.model.builtinScreenPresent = builtinScreenPresent
             c.setBlocker(.alarm, AlarmService.shared.isRinging)
         }
+        // A screen went away while the alarm rang (e.g. lid closed): show it on a remaining screen.
+        if AlarmService.shared.isRinging, !controllers.values.contains(where: { $0.model.isOpen }) {
+            alarmChanged(ringing: true)
+        }
         mouseMoved(to: NSEvent.mouseLocation)
     }
 
