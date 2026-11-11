@@ -2,6 +2,12 @@
 
 A "Dynamic Island" for the MacBook notch. Closed, it shows the album cover and animated music bars (or a running timer). Hover it and it springs open into a small control panel.
 
+![Open notch: Spotify, volume, output device and timers](docs/screenshots/home.png)
+
+| Closed | Adaptive color | Files |
+|---|---|---|
+| ![Closed notch with music bars](docs/screenshots/closed.png) | ![Background follows the album cover](docs/screenshots/adaptive-color.png) | ![File shelf with AirDrop and Trash](docs/screenshots/files.png) |
+
 ## Features
 
 - **Spotify now playing**: cover, title, artist, progress bar and playback controls
