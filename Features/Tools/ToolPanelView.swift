@@ -28,6 +28,8 @@ struct ToolPanelView: View {
 /// Top-bar buttons right of the notch: Timer, Stopwatch, Counter. The selected one is highlighted.
 struct ToolButtonsView: View {
     let theme: Theme
+    /// Called after a tool is picked (switches back to the Home tab).
+    var onPick: () -> Void = {}
     private var tools: ToolState { .shared }
     private var timers: TimerStore { .shared }
 
@@ -41,7 +43,7 @@ struct ToolButtonsView: View {
 
     private func button(_ tool: Tool, _ symbol: String, running: Bool) -> some View {
         let selected = tools.selected == tool
-        return Button { tools.select(tool) } label: {
+        return Button { tools.select(tool); onPick() } label: {
             Image(systemName: symbol)
                 .font(.system(size: 12, weight: .semibold))
                 .foregroundStyle(theme.iconColor.opacity(selected ? 1 : 0.6))

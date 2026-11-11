@@ -33,16 +33,7 @@ final class ScreenManager {
             for (id, isFull) in result { self.controllers[id]?.setFullscreenHidden(isFull) }
             self.mouseMoved(to: NSEvent.mouseLocation)
         }
-        mouse.start { [weak self] kind, p in
-            guard let self else { return }
-            for c in self.controllers.values {
-                switch kind {
-                case .moved: c.mouseMoved(to: p)
-                case .down: c.mouseDown(at: p)
-                case .up: c.mouseUp()
-                }
-            }
-        }
+        mouse.start { [weak self] kind, p in self?.handleMouse(kind, at: p) }
         rebuild()
         fullscreen.start()
         observeSettings()
@@ -112,6 +103,48 @@ final class ScreenManager {
             // Every notch is hidden (full screen): make sure the user still hears about it.
             NotificationService.shared.post(title: "⏲ Timer ended", body: TimerStore.shared.ringing.map(\.name).joined(separator: ", "))
         }
+    }
+
+    // MARK: Mouse and file drags
+
+    /// Drag pasteboard change count when the button went down: a new value during the drag means
+    /// something is being dragged (not just a window or a selection).
+    private var dragChangeCountAtMouseDown = NSPasteboard(name: .drag).changeCount
+    private var fileDragActive = false
+
+    private func handleMouse(_ kind: MouseTracker.Kind, at p: NSPoint) {
+        switch kind {
+        case .down:
+            dragChangeCountAtMouseDown = NSPasteboard(name: .drag).changeCount
+            for c in controllers.values { c.mouseDown(at: p) }
+        case .up:
+            endFileDrag()
+            for c in controllers.values { c.mouseUp() }
+        case .dragged:
+            if !fileDragActive { fileDragActive = isDraggingFiles() }
+            for c in controllers.values {
+                if fileDragActive { c.fileDragMoved(to: p) } else { c.mouseMoved(to: p) }
+            }
+        case .moved:
+            // Safety net: a drag can end without us seeing the mouse-up (e.g. dropped in another app).
+            if NSEvent.pressedMouseButtons & 1 == 0 {
+                endFileDrag()
+                for c in controllers.values { c.mouseUp() }
+            }
+            mouseMoved(to: p)
+        }
+    }
+
+    private func isDraggingFiles() -> Bool {
+        let pb = NSPasteboard(name: .drag)
+        guard pb.changeCount != dragChangeCountAtMouseDown else { return false }
+        return pb.types?.contains(.fileURL) ?? false
+    }
+
+    private func endFileDrag() {
+        guard fileDragActive else { return }
+        fileDragActive = false
+        for c in controllers.values { c.fileDragEnded() }
     }
 
     /// Click-through and hover: each panel decides from the cursor position.

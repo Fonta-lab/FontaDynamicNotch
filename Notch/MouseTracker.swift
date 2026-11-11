@@ -7,7 +7,7 @@ final class MouseTracker {
     private var globalMonitor: Any?
     private var localMonitor: Any?
 
-    enum Kind { case moved, down, up }
+    enum Kind { case moved, dragged, down, up }
 
     func start(onEvent: @escaping @MainActor (Kind, NSPoint) -> Void) {
         let mask: NSEvent.EventTypeMask = [.mouseMoved, .leftMouseDragged, .leftMouseDown, .leftMouseUp]
@@ -15,6 +15,7 @@ final class MouseTracker {
             let kind: Kind = switch event.type {
             case .leftMouseDown: .down
             case .leftMouseUp: .up
+            case .leftMouseDragged: .dragged
             default: .moved
             }
             MainActor.assumeIsolated { onEvent(kind, NSEvent.mouseLocation) }

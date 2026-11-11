@@ -24,6 +24,7 @@ final class NotchViewModel {
     var isFullscreenHidden = false
     var isMouseInside = false
     var isOpen = false
+    var tab: NotchTab = .home
     var closeBlockers: Set<CloseBlocker> = []
     /// Bumped when the user clicks outside the notch, so popups (output list) close.
     var dismissToken = 0

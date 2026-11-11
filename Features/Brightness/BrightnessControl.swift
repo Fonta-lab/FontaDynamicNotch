@@ -23,7 +23,7 @@ struct BrightnessControl: View {
                             onChange: { service.set(kind, $0) },
                             onEnd: { service.set(kind, $0) },
                             onEditingChanged: { dragging = $0 })
-                    .frame(width: 84)
+                    .frame(width: 64)
                     .transition(.opacity.combined(with: .scale(scale: 0.6, anchor: .leading)))
             }
         }

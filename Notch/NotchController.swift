@@ -73,6 +73,24 @@ final class NotchController {
         setBlocker(.mouseDown, false)
     }
 
+    /// Files are being dragged (SPEC §8): touching the notch opens it at once on the Files tab,
+    /// and it stays open until the drag ends.
+    func fileDragMoved(to p: NSPoint) {
+        guard !model.isFullscreenHidden else { return }
+        let inside = globalActiveRect?.contains(p) ?? false
+        setAcceptsMouse(inside)
+        guard inside else { return }
+        if model.tab != .files {
+            withAnimation(settings.animations.tabSwitch.animation) { model.tab = .files }
+        }
+        setBlocker(.fileDrag, true)
+        if !model.isOpen { open() }   // no hover delay for drags
+    }
+
+    func fileDragEnded() {
+        setBlocker(.fileDrag, false)
+    }
+
     private func setAcceptsMouse(_ accepts: Bool) {
         guard model.isMouseInside != accepts else { return }
         model.isMouseInside = accepts

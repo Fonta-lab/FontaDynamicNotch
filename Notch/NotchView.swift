@@ -72,10 +72,15 @@ struct OpenContentView: View {
         VStack(spacing: 0) {
             TopBarView(geometry: model.geometry.relativeToOpenRect, theme: theme, settings: settings,
                        showScreenBrightness: model.showsScreenBrightness,
-                       showKeyboardBrightness: model.showsKeyboardBrightness)
+                       showKeyboardBrightness: model.showsKeyboardBrightness,
+                       tab: model.tab,
+                       onSelectTab: { tab in withAnimation(settings.animations.tabSwitch.animation) { model.tab = tab } })
             Group {
                 if alarm.isRinging {
                     AlarmView(theme: theme)
+                        .transition(.opacity)
+                } else if model.tab == .files {
+                    FilesTabView(theme: theme)
                         .transition(.opacity)
                 } else {
                     // Music block centred vertically against the (full-height) tool panel.
@@ -84,6 +89,7 @@ struct OpenContentView: View {
                         ToolPanelView(theme: theme, spring: settings.animations.tabSwitch.animation)
                             .frame(width: 172)
                     }
+                    .transition(.opacity)
                 }
             }
             .padding(.horizontal, 18)

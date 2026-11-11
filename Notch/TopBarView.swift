@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// The open notch's top row, as tall as the notch. Left of the notch: (Home/Files in M8), screen
+/// The open notch's top row, as tall as the notch. Left of the notch: Home/Files, screen
 /// brightness, keyboard brightness. Right of the notch: Timer, Stopwatch, Counter.
 struct TopBarView: View {
     let geometry: NotchGeometry
@@ -8,6 +8,8 @@ struct TopBarView: View {
     let settings: AppSettings
     let showScreenBrightness: Bool
     let showKeyboardBrightness: Bool
+    let tab: NotchTab
+    let onSelectTab: (NotchTab) -> Void
 
     var body: some View {
         let g = geometry
@@ -15,6 +17,8 @@ struct TopBarView: View {
         let rightWidth = max(0, g.openRect.maxX - g.notchRect.maxX)
         HStack(spacing: 0) {
             HStack(spacing: 4) {
+                TabSwitchView(selected: tab, theme: theme, onSelect: onSelectTab)
+                    .padding(.trailing, 4)
                 if showScreenBrightness {
                     BrightnessControl(kind: .screen, theme: theme, spring: settings.animations.brightness.animation)
                 }
@@ -28,7 +32,7 @@ struct TopBarView: View {
             Spacer(minLength: 0)   // the real notch
             HStack(spacing: 0) {
                 Spacer(minLength: 0)
-                ToolButtonsView(theme: theme)
+                ToolButtonsView(theme: theme, onPick: { onSelectTab(.home) })
             }
             .padding(.trailing, 16)
             .frame(width: rightWidth, alignment: .trailing)
