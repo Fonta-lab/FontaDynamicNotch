@@ -5,3 +5,4 @@ DerivedData/
 .tools/
 xcuserdata/
 *.xcuserstate
+*.zip

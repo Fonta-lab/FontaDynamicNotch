@@ -19,7 +19,13 @@ A "Dynamic Island" for the MacBook notch. Closed, it shows the album cover and a
 - Xcode 26+ and [XcodeGen](https://github.com/yonaskolb/XcodeGen) to build
 - Spotify desktop app for the music features
 
-## Build
+## Install
+
+1. Download `FontaDynamicNotch-0.1.zip` from the [latest release](https://github.com/Fonta-lab/FontaDynamicNotch/releases/latest) and unzip it.
+2. Drag **FontaDynamicNotch.app** into your Applications folder.
+3. The app is not notarized by Apple, so the first launch is blocked. Open it once, then go to **System Settings → Privacy & Security** and click **Open Anyway** (or right-click the app → Open).
+
+## Build from source
 
 The Xcode project is generated from `project.yml`.
 
