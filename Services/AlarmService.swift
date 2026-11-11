@@ -14,14 +14,11 @@ final class AlarmService {
 
     private init() {}
 
-    static let systemSoundsFolder = URL(fileURLWithPath: "/System/Library/Sounds")
-
     func ring(names: [String]) {
         if !isRinging {
             isRinging = true
             let s = SettingsStore.shared.settings
-            let url = Self.systemSoundsFolder.appendingPathComponent("\(s.alarmSoundName).aiff")
-            player.start(url: url, volume: Float(s.alarmVolume)) { ok in
+            player.start(url: s.alarmSound.url, volume: Float(s.alarmVolume)) { ok in
                 guard !ok else { return }
                 // Couldn't play (e.g. no output device): fall back to a notification.
                 DispatchQueue.main.async {
@@ -49,7 +46,7 @@ final class AlarmPlayer: @unchecked Sendable {
     private let queue = DispatchQueue(label: "com.fonta.dynamicnotch.alarm", qos: .userInitiated)
     private var player: AVAudioPlayer?   // only touched on `queue`
 
-    func start(url: URL, volume: Float, completion: @escaping @Sendable (Bool) -> Void) {
+    func start(url: URL, volume: Float, loop: Bool = true, completion: @escaping @Sendable (Bool) -> Void) {
         queue.async {
             self.player?.stop()
             guard let p = try? AVAudioPlayer(contentsOf: url) else {
@@ -57,7 +54,7 @@ final class AlarmPlayer: @unchecked Sendable {
                 completion(false)
                 return
             }
-            p.numberOfLoops = -1
+            p.numberOfLoops = loop ? -1 : 0
             p.volume = max(0, min(1, volume))
             let ok = p.play()
             self.player = ok ? p : nil

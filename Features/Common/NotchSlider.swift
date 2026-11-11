@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Themed horizontal slider (0…1). The knob shows on hover or while dragging.
+/// Themed horizontal slider (0…1). Knob shape, knob-on-hover and fill colour come from the theme.
 /// `onChange` fires continuously while dragging; `onEnd` once on release.
 struct NotchSlider: View {
     let value: Double
@@ -18,15 +18,17 @@ struct NotchSlider: View {
         GeometryReader { geo in
             let w = max(1, geo.size.width)
             let v = min(1, max(0, dragValue ?? value))
-            let showKnob = enabled && (hovering || dragValue != nil)
+            let showKnob = enabled && theme.knobShape != .none
+                && (!theme.knobOnlyOnHover || hovering || dragValue != nil)
+            let knobW = theme.knobShape == .capsule ? theme.knobSize * 1.7 : theme.knobSize
             ZStack(alignment: .leading) {
                 Capsule().fill(theme.sliderTrack).frame(height: theme.sliderHeight)
-                Capsule().fill(theme.sliderFill.opacity(enabled ? 1 : 0.35))
+                Capsule().fill(fillColor.opacity(enabled ? 1 : 0.35))
                     .frame(width: max(theme.sliderHeight, w * v), height: theme.sliderHeight)
-                Circle()
+                Capsule()
                     .fill(theme.sliderKnob)
-                    .frame(width: theme.knobSize, height: theme.knobSize)
-                    .offset(x: w * v - theme.knobSize / 2)
+                    .frame(width: knobW, height: theme.knobSize)
+                    .offset(x: min(w - knobW, max(0, w * v - knobW / 2)))
                     .opacity(showKnob ? 1 : 0)
             }
             .frame(height: geo.size.height)
@@ -52,5 +54,10 @@ struct NotchSlider: View {
         .frame(height: max(theme.knobSize, 12))
         .onHover { hovering = $0 }
         .animation(.easeOut(duration: 0.15), value: hovering)
+    }
+
+    private var fillColor: Color {
+        if theme.sliderFillStyle == .artwork, let c = SpotifyService.shared.artworkColor { return c.lightenedForBars.color }
+        return theme.sliderFill
     }
 }

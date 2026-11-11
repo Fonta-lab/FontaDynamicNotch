@@ -20,7 +20,7 @@ struct TabSwitchView: View {
     private func item(_ tab: NotchTab, _ symbol: String) -> some View {
         Button { onSelect(tab) } label: {
             Image(systemName: symbol)
-                .font(.system(size: 11, weight: .semibold))
+                .font(.system(size: theme.topBarIconSize - 1, weight: .semibold))
                 .foregroundStyle(theme.iconColor.opacity(selected == tab ? 1 : 0.5))
                 .frame(width: 22, height: 20)
                 .background(Capsule().fill(Color.white.opacity(selected == tab ? 0.18 : 0)))

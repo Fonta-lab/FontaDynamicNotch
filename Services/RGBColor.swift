@@ -25,9 +25,8 @@ struct RGBColor: Equatable, Sendable {
         RGBColor(r: r + (o.r - r) * t, g: g + (o.g - g) * t, b: b + (o.b - b) * t)
     }
 
-    /// Darkens until white text reaches the given contrast ratio (4.5:1 by default).
-    func darkenedForWhiteText(contrast: Double) -> RGBColor {
-        let maxLum = 1.05 / contrast - 0.05
+    /// Darkens until the colour is no brighter than `maxLuminance` (0.183 keeps white text at 4.5:1).
+    func darkened(toMaxLuminance maxLum: Double) -> RGBColor {
         var c = self
         var i = 0
         while c.luminance > maxLum && i < 60 {

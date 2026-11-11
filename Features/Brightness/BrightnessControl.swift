@@ -15,7 +15,7 @@ struct BrightnessControl: View {
         let expanded = hovering || dragging
         HStack(spacing: 6) {
             Image(systemName: symbol)
-                .font(.system(size: 12, weight: .semibold))
+                .font(.system(size: theme.topBarIconSize, weight: .semibold))
                 .foregroundStyle(theme.iconColor.opacity(0.9))
                 .frame(width: 16)
             if expanded {

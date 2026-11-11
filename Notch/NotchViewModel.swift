@@ -14,7 +14,8 @@ enum CloseBlocker: String, Hashable, Sendable {
 @MainActor @Observable
 final class NotchViewModel {
     var geometry: NotchGeometry
-    var theme = Theme.default
+    /// The selected theme; changes apply live.
+    var theme: Theme { ThemeStore.shared.current }
     var screenName: String
     var isBuiltin: Bool
     /// False when the lid is closed (no built-in display anywhere).

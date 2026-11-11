@@ -22,7 +22,7 @@ struct NotchView: View {
         ZStack(alignment: .topLeading) {
             shape
                 .fill(Color.black)
-                .shadow(color: .black.opacity(open && t.shadowEnabled ? t.shadowOpacity : 0),
+                .shadow(color: t.shadowColor.opacity(open && t.shadowEnabled ? t.shadowOpacity : 0),
                         radius: t.shadowRadius, y: t.shadowYOffset)
 
             ZStack(alignment: .topLeading) {
@@ -57,7 +57,7 @@ struct NotchView: View {
 
     private var backgroundColor: Color? {
         guard model.theme.useArtworkColor, spotify.isMusicActive, let c = spotify.artworkColor else { return nil }
-        return c.scaled(model.theme.artworkIntensity).darkenedForWhiteText(contrast: model.theme.minTextContrast).color
+        return c.scaled(model.theme.artworkIntensity).darkened(toMaxLuminance: model.theme.maxBackgroundLuminance).color
     }
 }
 
@@ -86,8 +86,12 @@ struct OpenContentView: View {
                     // Music block centred vertically against the (full-height) tool panel.
                     HStack(alignment: .center, spacing: 14) {
                         MediaPanelView(theme: theme, settings: settings)
-                        ToolPanelView(theme: theme, spring: settings.animations.tabSwitch.animation)
-                            .frame(width: 172)
+                        // Hidden when every tool is turned off in Settings › Layout & Modules.
+                        if !settings.visibleTools.isEmpty {
+                            ToolPanelView(theme: theme, spring: settings.animations.tabSwitch.animation,
+                                          visibleTools: settings.visibleTools)
+                                .frame(width: 172)
+                        }
                     }
                     .transition(.opacity)
                 }

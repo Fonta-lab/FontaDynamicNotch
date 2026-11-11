@@ -4,14 +4,17 @@ import SwiftUI
 struct ToolPanelView: View {
     let theme: Theme
     let spring: Animation
+    let visibleTools: [Tool]
     private var tools: ToolState { .shared }
 
     var body: some View {
+        // If the selected tool was hidden in Settings, show the first visible one.
+        let tool = visibleTools.contains(tools.selected) ? tools.selected : (visibleTools.first ?? .timer)
         ZStack {
             RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .fill(Color.white.opacity(0.07))
             Group {
-                switch tools.selected {
+                switch tool {
                 case .timer: TimerPanelView(theme: theme)
                 case .stopwatch: StopwatchPanelView(theme: theme)
                 case .counter: CounterPanelView(theme: theme)
@@ -19,33 +22,38 @@ struct ToolPanelView: View {
             }
             .padding(10)
             .transition(.opacity)
-            .id(tools.selected)
+            .id(tool)
         }
-        .animation(spring, value: tools.selected)
+        .animation(spring, value: tool)
     }
 }
 
 /// Top-bar buttons right of the notch: Timer, Stopwatch, Counter. The selected one is highlighted.
 struct ToolButtonsView: View {
     let theme: Theme
+    /// Visible tools in the user's order.
+    let tools: [Tool]
     /// Called after a tool is picked (switches back to the Home tab).
     var onPick: () -> Void = {}
-    private var tools: ToolState { .shared }
-    private var timers: TimerStore { .shared }
+    private var state: ToolState { .shared }
 
     var body: some View {
         HStack(spacing: 4) {
-            button(.timer, "timer", running: timers.anyRunning)
-            button(.stopwatch, "stopwatch", running: StopwatchStore.shared.isRunning)
-            button(.counter, "plusminus", running: false)
+            ForEach(tools, id: \.self) { tool in
+                switch tool {
+                case .timer: button(.timer, "timer", running: TimerStore.shared.anyRunning)
+                case .stopwatch: button(.stopwatch, "stopwatch", running: StopwatchStore.shared.isRunning)
+                case .counter: button(.counter, "plusminus", running: false)
+                }
+            }
         }
     }
 
     private func button(_ tool: Tool, _ symbol: String, running: Bool) -> some View {
-        let selected = tools.selected == tool
-        return Button { tools.select(tool); onPick() } label: {
+        let selected = state.selected == tool
+        return Button { state.select(tool); onPick() } label: {
             Image(systemName: symbol)
-                .font(.system(size: 12, weight: .semibold))
+                .font(.system(size: theme.topBarIconSize, weight: .semibold))
                 .foregroundStyle(theme.iconColor.opacity(selected ? 1 : 0.6))
                 .frame(width: 28, height: 22)
                 .background(Capsule().fill(Color.white.opacity(selected ? 0.16 : 0)))

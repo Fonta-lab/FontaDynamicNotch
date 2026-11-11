@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// The open notch's top row, as tall as the notch. Left of the notch: Home/Files, screen
-/// brightness, keyboard brightness. Right of the notch: Timer, Stopwatch, Counter.
+/// The open notch's top row, as tall as the notch. Left and right of the real notch, the modules in
+/// the user's order (Settings › Layout & Modules), without hidden or unavailable ones.
 struct TopBarView: View {
     let geometry: NotchGeometry
     let theme: Theme
@@ -17,13 +17,8 @@ struct TopBarView: View {
         let rightWidth = max(0, g.openRect.maxX - g.notchRect.maxX)
         HStack(spacing: 0) {
             HStack(spacing: 4) {
-                TabSwitchView(selected: tab, theme: theme, onSelect: onSelectTab)
-                    .padding(.trailing, 4)
-                if showScreenBrightness {
-                    BrightnessControl(kind: .screen, theme: theme, spring: settings.animations.brightness.animation)
-                }
-                if showKeyboardBrightness {
-                    BrightnessControl(kind: .keyboard, theme: theme, spring: settings.animations.brightness.animation)
+                ForEach(settings.leftModules.filter(settings.isVisible)) { module in
+                    leftItem(module)
                 }
                 Spacer(minLength: 0)
             }
@@ -32,11 +27,26 @@ struct TopBarView: View {
             Spacer(minLength: 0)   // the real notch
             HStack(spacing: 0) {
                 Spacer(minLength: 0)
-                ToolButtonsView(theme: theme, onPick: { onSelectTab(.home) })
+                ToolButtonsView(theme: theme, tools: settings.visibleTools, onPick: { onSelectTab(.home) })
             }
             .padding(.trailing, 16)
             .frame(width: rightWidth, alignment: .trailing)
         }
         .frame(height: g.notchRect.height)
+    }
+
+    @ViewBuilder private func leftItem(_ module: TopModule) -> some View {
+        let spring = settings.animations.brightness.animation
+        switch module {
+        case .homeFiles:
+            TabSwitchView(selected: tab, theme: theme, onSelect: onSelectTab)
+                .padding(.trailing, 4)
+        case .screenBrightness:
+            if showScreenBrightness { BrightnessControl(kind: .screen, theme: theme, spring: spring) }
+        case .keyboardBrightness:
+            if showKeyboardBrightness { BrightnessControl(kind: .keyboard, theme: theme, spring: spring) }
+        default:
+            EmptyView()
+        }
     }
 }

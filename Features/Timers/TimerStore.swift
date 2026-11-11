@@ -102,6 +102,14 @@ final class TimerStore {
         update(id) { $0.run = .idle }
     }
 
+    /// Settings › Timers. A running timer keeps its end time; the new length applies from the next start.
+    func updatePreset(_ id: UUID, name: String? = nil, duration: TimeInterval? = nil) {
+        update(id) { p in
+            if let name { p.name = name }
+            if let duration { p.duration = max(1, duration) }
+        }
+    }
+
     /// Called by the alarm's Stop button: every ringing timer goes back to idle.
     func clearRinging() {
         var changed = false
@@ -174,10 +182,11 @@ final class ToolState {
     /// On open: a running timer wins (the one ending first), then a running stopwatch,
     /// otherwise the last tool used (SPEC §4.3).
     func prepareForOpen() {
-        if let r = TimerStore.shared.soonestRunning {
+        let visible = SettingsStore.shared.settings.visibleTools
+        if visible.contains(.timer), let r = TimerStore.shared.soonestRunning {
             selected = .timer
             TimerStore.shared.selectedID = r.preset.id
-        } else if StopwatchStore.shared.isRunning {
+        } else if visible.contains(.stopwatch), StopwatchStore.shared.isRunning {
             selected = .stopwatch
         } else {
             selected = lastUsed
