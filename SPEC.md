@@ -32,7 +32,7 @@ Everything visual is customizable from a separate macOS-style Settings window: t
 | Target name | `FontaDynamicNotch` (no apostrophe in target/product names to avoid path issues) |
 | Display name | `Fonta's Dynamic Notch` via `CFBundleDisplayName` |
 | Bundle ID | `com.fonta.dynamicnotch` |
-| Deployment target | macOS 26.0 (the user runs 27.2.1) |
+| Deployment target | macOS 14.0 Sonoma (lowered from 26.0 at the user's request for v0.2; the user runs 27.2.1). Target hardware: Apple Silicon Macs with a notch. |
 | App Sandbox | **OFF**. Required for Spotify scripting, private frameworks and trashing arbitrary files. |
 | Hardened Runtime | ON, with entitlement `com.apple.security.automation.apple-events` |
 | Info.plist | `LSUIElement = YES` (no Dock icon); `NSAppleEventsUsageDescription` ("Used to show and control what's playing in Spotify.") |

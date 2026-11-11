@@ -2,11 +2,11 @@ name: FontaDynamicNotch
 options:
   bundleIdPrefix: com.fonta
   deploymentTarget:
-    macOS: "26.0"
+    macOS: "14.0"
 settings:
   base:
     SWIFT_VERSION: "6.0"
-    MARKETING_VERSION: "0.1"
+    MARKETING_VERSION: "0.2"
     CURRENT_PROJECT_VERSION: "1"
 targets:
   FontaDynamicNotch:
@@ -17,6 +17,8 @@ targets:
       path: App/Info.plist
       properties:
         CFBundleDisplayName: "Fonta's Dynamic Notch"
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         LSUIElement: true
         NSAppleEventsUsageDescription: "Used to show and control what's playing in Spotify."
     entitlements:
