@@ -21,6 +21,7 @@ A "Dynamic Island" for the MacBook notch. Closed, it shows the album cover and a
 
 ## Requirements
 
+- Built and tested on a **MacBook Air M5 with macOS 27.2.1**. Other Macs on macOS 26 or later should work, but are untested.
 - macOS 26 or later, Apple Silicon recommended
 - Xcode 26+ and [XcodeGen](https://github.com/yonaskolb/XcodeGen) to build
 - Spotify desktop app for the music features
