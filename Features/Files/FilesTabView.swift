@@ -109,7 +109,7 @@ struct ShelfItemView: View {
         .contentShape(Rectangle())
         .onTapGesture { ShelfStore.shared.toggleSelection(item.id) }
         .onDrag { NSItemProvider(contentsOf: item.url) ?? NSItemProvider() }
-        .onHover { hovering = $0 }
+        .notchHover { hovering = $0 }
         .help(item.name)
     }
 }

@@ -33,7 +33,7 @@ struct StopwatchPanelView: View {
             }
             .frame(height: 40)
             .contentShape(Rectangle())
-            .onHover { showLaps = $0 && !laps.isEmpty }
+            .notchHover { showLaps = $0 && !laps.isEmpty }
             .animation(Motion.change, value: showLaps)
             Spacer(minLength: 0)
             controls

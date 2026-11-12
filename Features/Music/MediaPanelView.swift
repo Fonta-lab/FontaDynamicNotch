@@ -163,7 +163,7 @@ private struct NotchButtonBody: View {
             )
             .scaleEffect(configuration.isPressed ? 0.94 : 1)
             .contentShape(Rectangle())
-            .onHover { hovering = $0 }
+            .notchHover { hovering = $0 }
             .animation(Motion.feedback, value: hovering)
             .animation(Motion.feedback, value: configuration.isPressed)
     }

@@ -52,6 +52,7 @@ final class NotchController {
     func mouseMoved(to p: NSPoint) {
         let inside = globalActiveRect?.contains(p) ?? false
         setAcceptsMouse(inside || model.closeBlockers.contains(.mouseDown))
+        updatePointer(p, inside: inside)
 
         if model.isOpen {
             if inside { cancelClose() } else if model.closeBlockers.isEmpty { scheduleClose() }
@@ -89,6 +90,14 @@ final class NotchController {
 
     func fileDragEnded() {
         setBlocker(.fileDrag, false)
+    }
+
+    /// Hover highlights follow the mouse while it's inside the open notch (NotchPointer).
+    private func updatePointer(_ p: NSPoint, inside: Bool) {
+        let g = model.geometry
+        let local: CGPoint? = model.isOpen && inside
+            ? CGPoint(x: p.x - g.panelFrame.minX, y: g.panelFrame.maxY - p.y) : nil
+        if model.pointer.location != local { model.pointer.location = local }
     }
 
     private func setAcceptsMouse(_ accepts: Bool) {

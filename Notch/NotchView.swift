@@ -48,6 +48,7 @@ struct NotchView: View {
         .frame(width: g.panelFrame.width, height: g.panelFrame.height, alignment: .topLeading)
         // Glass and materials use their dark look, made for white text (same look as the black notch).
         .environment(\.colorScheme, t.isGlass ? .dark : colorScheme)
+        .environment(\.notchPointer, model.pointer)
         .environment(\.notchActions, NotchActions(
             setCloseBlocker: { [model] blocker, on in model.blockerHandler?(blocker, on) },
             dismissToken: model.dismissToken))

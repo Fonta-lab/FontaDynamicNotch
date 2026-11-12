@@ -1,11 +1,12 @@
 import SwiftUI
 
 /// Timer tool (SPEC §7.1): one timer. Starred lengths (up to 3) as chips on top, the time in the
-/// middle (set in place while idle: ▲▼ on hover, or scroll), and Start/Pause, Reset and Star.
+/// middle (set in place while idle: scroll or drag a number), and Start/Pause, Reset and a star.
 struct TimerPanelView: View {
     let theme: Theme
     private var store: TimerStore { .shared }
     @State private var toast: String?
+    private static let chipHeight: CGFloat = 20
     @State private var toastWork: DispatchWorkItem?
 
     var body: some View {
@@ -53,17 +54,20 @@ struct TimerPanelView: View {
                 .font(.caption.weight(.medium))
                 .foregroundStyle(theme.secondaryText)
                 .lineLimit(1)
-                .frame(maxWidth: .infinity, minHeight: 20)
+                .frame(maxWidth: .infinity)
+                .frame(height: Self.chipHeight)
         } else {
             HStack(spacing: Spacing.xs) {
                 ForEach(0..<TimerStore.maxStars, id: \.self) { i in
                     if i < store.starred.count {
                         chip(store.starred[i], t)
                     } else {
-                        Color.clear.frame(maxWidth: .infinity, minHeight: 20)
+                        Color.clear.frame(maxWidth: .infinity)
                     }
                 }
             }
+            // Fixed height: an empty slot must not stretch and push the time down.
+            .frame(height: Self.chipHeight)
         }
     }
 
@@ -74,7 +78,7 @@ struct TimerPanelView: View {
                 .font(.caption.weight(.semibold).monospacedDigit())
                 .lineLimit(1)
                 .foregroundStyle(theme.primaryText.opacity(isCurrent ? 1 : 0.65))
-                .frame(maxWidth: .infinity, minHeight: 20)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(Capsule().fill(theme.primaryText.opacity(isCurrent ? Highlight.selected : Highlight.panel)))
                 .overlay(alignment: .topTrailing) {
                     if isCurrent && (t.isRunning || t.isRinging) {
@@ -104,8 +108,7 @@ struct TimerPanelView: View {
         return HStack(spacing: Spacing.s) {
             PanelButton(theme: theme, symbol: symbol, enabled: !t.isRinging, help: help) { store.toggle() }
             PanelButton(theme: theme, symbol: "arrow.counterclockwise", enabled: !t.isIdle, help: "Reset") { store.reset() }
-            PanelButton(theme: theme, symbol: starred ? "star.fill" : "star",
-                        help: starred ? "Remove this time from the starred ones" : "Star this time") {
+            StarButton(starred: starred, theme: theme) {
                 if store.toggleStar() == .full { showToast("\(TimerStore.maxStars) timers already saved") }
             }
         }
@@ -125,6 +128,31 @@ struct TimerPanelView: View {
         case .ringing: .red
         default: theme.primaryText
         }
+    }
+}
+
+/// The star next to Start and Reset: just the symbol, no box. Outline = not saved, filled = saved.
+private struct StarButton: View {
+    let starred: Bool
+    let theme: Theme
+    let action: () -> Void
+    @State private var hovering = false
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: starred ? "star.fill" : "star")
+                .font(.title3.weight(.semibold))
+                .foregroundStyle(theme.iconColor.opacity(starred || hovering ? 1 : 0.7))
+                .scaleEffect(hovering && !Motion.reduceMotion ? 1.12 : 1)
+                .contentTransition(.symbolEffect(.replace))
+                .frame(width: 28, height: 26)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .notchHover { hovering = $0 }
+        .animation(Motion.feedback, value: hovering)
+        .help(starred ? "Remove this time from the starred ones" : "Star this time")
+        .accessibilityLabel(starred ? "Remove star" : "Star this time")
     }
 }
 

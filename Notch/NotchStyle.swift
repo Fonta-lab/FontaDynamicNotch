@@ -50,7 +50,7 @@ enum Motion {
     static let reducedFade = Animation.easeOut(duration: 0.15)
 
     /// Hover, press, toggle: a quick spring with a hint of bounce.
-    static var feedback: Animation { reduceMotion ? reducedFade : .snappy(duration: 0.25) }
+    static var feedback: Animation { reduceMotion ? reducedFade : .snappy(duration: 0.18) }
     /// Small things appearing or changing (output list, lap list, drop targets): smooth, no bounce.
     static var change: Animation { reduceMotion ? reducedFade : .smooth(duration: 0.3) }
     /// The open content waits this long, so the notch starts growing before the content shows.

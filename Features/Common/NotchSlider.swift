@@ -64,7 +64,7 @@ struct NotchSlider: View {
             )
         }
         .frame(height: max(theme.knobSize, 12))
-        .onHover { hovering = $0 }
+        .notchHover { hovering = $0 }
         .animation(Motion.feedback, value: hovering)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(label)

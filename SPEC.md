@@ -220,9 +220,9 @@ CoreAudio, public API [Certain].
 
 ### 7.1 Timer
 Redesigned in v0.4 at the user's request (replaces the 5 named presets and concurrent timers).
-- **One timer** `{ duration, run }`. While it's idle, its length is set right in the notch: hovering the time shows small chevrons above and below the hours, minutes and seconds (glyph only, no box, in the empty space of the digits' line so they never cover the chips or buttons); clicking them or scrolling over a number changes it (1 h / 1 min / 1 s steps, 1 s – 23:59:59).
+- **One timer** `{ duration, run }`. While it's idle, its length is set right in the notch: hovering a number (hours, minutes or seconds) gives it a soft highlight; scrolling over it or dragging it up/down changes it (up = more; 1 h / 1 min / 1 s steps, 1 s – 23:59:59). No arrows or extra buttons (arrows were tried and rejected by the user).
 - **Starred times:** the Star button saves the current length; starred lengths show as chips at the top of the timer box, labelled with the time ("5:00"), shortest first, in 3 equal slots. Clicking a chip sets the timer to it (only while idle). Star again on a starred length removes it. **At most 3**: starring a 4th shows a short message "3 timers already saved" (≈1.6 s). With no stars, the chip row says "Star a time to save it". Settings › Timers lists the starred times with Remove.
-- Controls: **Start/Pause**, **Reset**, **Star**.
+- Controls: **Start/Pause**, **Reset** (panel buttons) and a **plain star** symbol with no box (outline = not saved, filled = saved).
 - State: `idle | running(endDate) | paused(remaining) | ringing`.
 - Scheduling: a single task that sleeps until `endDate`, recomputed whenever the timer changes and on `NSWorkspace.didWakeNotification`. No per-second ticks unless the time is visible.
 - **Persistence and reboot behaviour:**

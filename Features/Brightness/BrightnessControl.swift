@@ -32,7 +32,7 @@ struct BrightnessControl: View {
         .frame(height: TopBarMetrics.itemHeight)
         .background(Capsule().fill(theme.primaryText.opacity(expanded ? Highlight.hover : 0)))
         .contentShape(Capsule())
-        .onHover { inside in
+        .notchHover { inside in
             hovering = inside
             if inside { service.refresh(kind) }   // follow changes made with the keyboard keys
         }

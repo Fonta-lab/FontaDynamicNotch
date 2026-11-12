@@ -30,6 +30,8 @@ final class NotchViewModel {
     /// Bumped when the user clicks outside the notch, so popups (output list) close.
     var dismissToken = 0
     @ObservationIgnored var blockerHandler: ((CloseBlocker, Bool) -> Void)?
+    /// The mouse inside the open notch, for hover highlights (see NotchPointer).
+    @ObservationIgnored let pointer = NotchPointer()
 
     init(geometry: NotchGeometry, screenName: String, isBuiltin: Bool, settings: AppSettings) {
         self.geometry = geometry

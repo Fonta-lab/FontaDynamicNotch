@@ -1,20 +1,11 @@
 import SwiftUI
 
-/// The idle timer's time, editable right in the notch (SPEC §7.1). Hovering shows small chevrons
-/// above and below the hours, minutes and seconds: click them, or scroll over a number.
+/// The idle timer's time, set right in the notch (SPEC §7.1). Hovering a number (hours, minutes
+/// or seconds) gives it a soft highlight; scroll over it, or drag it up or down, to change it.
+/// Up = more. No extra buttons.
 struct TimerDurationEditor: View {
     let duration: TimeInterval
     let theme: Theme
-    @State private var hovering = false
-    @State private var hideWork: DispatchWorkItem?
-
-    /// Click area of each chevron. Only the glyph is drawn (no highlight box), and it sits in the
-    /// empty space at the top / bottom of the digits' line, so it never covers the chips or buttons.
-    private static let arrowHeight: CGFloat = 16
-    private static let arrowWidth: CGFloat = 32
-    /// How far each arrow's area tucks into the digits' line (its empty top / bottom).
-    private nonisolated static let arrowTuckTop: CGFloat = 6
-    private nonisolated static let arrowTuckBottom: CGFloat = 5
 
     enum Unit: CaseIterable {
         case hours, minutes, seconds
@@ -38,14 +29,14 @@ struct TimerDurationEditor: View {
         let total = Int(duration.rounded())
         let h = total / 3600, m = total / 60 % 60, s = total % 60
         // Same look as the running time (m:ss, or h:mm:ss from one hour), so nothing jumps on Start.
+        // The minutes and seconds keep their place in the view tree when the hours appear, so a
+        // drag that crosses one hour isn't interrupted.
         HStack(spacing: 0) {
             if h > 0 {
                 segment(.hours, "\(h)", value: h)
                 colon
-                segment(.minutes, String(format: "%02d", m), value: m)
-            } else {
-                segment(.minutes, "\(m)", value: m)
             }
+            segment(.minutes, h > 0 ? String(format: "%02d", m) : "\(m)", value: m)
             colon
             segment(.seconds, String(format: "%02d", s), value: s)
         }
@@ -53,14 +44,6 @@ struct TimerDurationEditor: View {
         .foregroundStyle(theme.primaryText)
         .lineLimit(1)
         .fixedSize()
-        // Hover area includes the arrows above and below (the layout size doesn't change).
-        .padding(.top, Self.arrowHeight - Self.arrowTuckTop)
-        .padding(.bottom, Self.arrowHeight - Self.arrowTuckBottom)
-        .contentShape(Rectangle())
-        .onHover(perform: setHovering)
-        .padding(.top, Self.arrowTuckTop - Self.arrowHeight)
-        .padding(.bottom, Self.arrowTuckBottom - Self.arrowHeight)
-        .animation(Motion.feedback, value: hovering)
     }
 
     private var colon: some View {
@@ -68,35 +51,7 @@ struct TimerDurationEditor: View {
     }
 
     private func segment(_ unit: Unit, _ text: String, value: Int) -> some View {
-        Text(text)
-            .overlay { ScrollWheelCatcher { change(unit, by: $0) } }
-            .overlay(alignment: .top) {
-                arrow("chevron.up", unit, +1)
-                    .alignmentGuide(.top) { $0[.bottom] - Self.arrowTuckTop }
-            }
-            .overlay(alignment: .bottom) {
-                arrow("chevron.down", unit, -1)
-                    .alignmentGuide(.bottom) { $0[.top] + Self.arrowTuckBottom }
-            }
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel(unit.name)
-            .accessibilityValue("\(value)")
-            .accessibilityAdjustableAction { direction in
-                switch direction {
-                case .increment: change(unit, by: 1)
-                case .decrement: change(unit, by: -1)
-                @unknown default: break
-                }
-            }
-    }
-
-    private func arrow(_ symbol: String, _ unit: Unit, _ direction: Int) -> some View {
-        StepArrow(symbol: symbol, color: theme.primaryText,
-                  width: Self.arrowWidth, height: Self.arrowHeight) { change(unit, by: direction) }
-            .opacity(hovering ? 1 : 0)
-            .allowsHitTesting(hovering)
-            .help(direction > 0 ? "More \(unit.name.lowercased())" : "Fewer \(unit.name.lowercased())")
-            .accessibilityHidden(true)   // the segment itself is adjustable
+        TimeSegment(text: text, unit: unit, value: value, theme: theme) { change(unit, by: $0) }
     }
 
     private func change(_ unit: Unit, by steps: Int) {
@@ -104,42 +59,63 @@ struct TimerDurationEditor: View {
         guard new != duration else { return }
         TimerStore.shared.setDuration(new)
     }
-
-    /// Shows the arrows at once; hides them after a short grace period, so moving from the digits
-    /// onto an arrow never makes it vanish under the cursor.
-    private func setHovering(_ inside: Bool) {
-        hideWork?.cancel()
-        hideWork = nil
-        if inside {
-            hovering = true
-        } else {
-            let work = DispatchWorkItem { hovering = false }
-            hideWork = work
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3, execute: work)
-        }
-    }
 }
 
-/// A chevron with no box: dim at rest, full colour and a touch bigger under the mouse.
-private struct StepArrow: View {
-    let symbol: String
-    let color: Color
-    let width: CGFloat
-    let height: CGFloat
-    let action: () -> Void
+/// One number of the time: highlight on hover, scroll or vertical drag to change it.
+private struct TimeSegment: View {
+    let text: String
+    let unit: TimerDurationEditor.Unit
+    let value: Int
+    let theme: Theme
+    let onStep: (Int) -> Void
+
     @State private var hovering = false
+    @State private var dragging = false
+    /// Steps already applied during the current drag.
+    @State private var dragSteps = 0
+
+    /// Points of vertical drag per step.
+    private static let dragPerStep: CGFloat = 6
 
     var body: some View {
-        Button(action: action) {
-            Image(systemName: symbol)
-                .font(.caption.weight(.bold))
-                .foregroundStyle(color.opacity(hovering ? 1 : 0.6))
-                .scaleEffect(hovering && !Motion.reduceMotion ? 1.2 : 1)
-                .frame(width: width, height: height)
-                .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .onHover { hovering = $0 }
-        .animation(Motion.feedback, value: hovering)
+        let highlighted = hovering || dragging
+        Text(text)
+            .background(
+                // A soft pill around the digits (not the line's empty top and bottom).
+                RoundedRectangle(cornerRadius: theme.buttonRadius(height: 26), style: .continuous)
+                    .fill(theme.primaryText.opacity(highlighted ? Highlight.hover : 0))
+                    .padding(.horizontal, -3)
+                    .padding(.vertical, 3)
+            )
+            .overlay { ScrollWheelCatcher(onStep: onStep) }
+            .contentShape(Rectangle())
+            .gesture(
+                DragGesture(minimumDistance: 2)
+                    .onChanged { g in
+                        dragging = true
+                        let steps = Int((-g.translation.height / Self.dragPerStep).rounded(.towardZero))
+                        if steps != dragSteps {
+                            onStep(steps - dragSteps)
+                            dragSteps = steps
+                        }
+                    }
+                    .onEnded { _ in
+                        dragging = false
+                        dragSteps = 0
+                    }
+            )
+            .notchHover { hovering = $0 }
+            .animation(Motion.feedback, value: highlighted)
+            .help("Scroll, or drag up or down, to change the \(unit.name.lowercased())")
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(unit.name)
+            .accessibilityValue("\(value)")
+            .accessibilityAdjustableAction { direction in
+                switch direction {
+                case .increment: onStep(1)
+                case .decrement: onStep(-1)
+                @unknown default: break
+                }
+            }
     }
 }
