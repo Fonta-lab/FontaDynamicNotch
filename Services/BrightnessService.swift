@@ -14,8 +14,6 @@ final class BrightnessService {
     private(set) var keyboardAvailable = false
     private(set) var screenLevel: Double = 0.5
     private(set) var keyboardLevel: Double = 0.5
-    /// macOS has turned the keyboard light off because the room is bright (see KeyboardBrightnessBackend).
-    private(set) var keyboardSuppressed = false
 
     @ObservationIgnored private let queue = DispatchQueue(label: "com.fonta.dynamicnotch.brightness", qos: .userInitiated)
     @ObservationIgnored private let screen: BrightnessBackend = DisplayBrightnessBackend()
@@ -35,7 +33,6 @@ final class BrightnessService {
             let s = screen.probe() ? screen.get() : nil
             let kOK = keyboard.probe()
             let k = kOK ? keyboard.get() : nil
-            let kSuppressed = kOK && keyboard.isSuppressed()
             DispatchQueue.main.async {
                 MainActor.assumeIsolated {
                     let svc = BrightnessService.shared
@@ -43,7 +40,6 @@ final class BrightnessService {
                     svc.keyboardAvailable = kOK
                     if let s { svc.screenLevel = Double(s) }
                     if let k { svc.keyboardLevel = Double(k) }
-                    svc.keyboardSuppressed = kSuppressed
                     if !kOK && retryKeyboard {
                         DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
                             MainActor.assumeIsolated { BrightnessService.shared.probe(retryKeyboard: false) }
@@ -61,14 +57,9 @@ final class BrightnessService {
     func refresh(_ kind: Kind) {
         let backend = backend(kind)
         queue.async {
-            let v = backend.get()
-            let suppressed = backend.isSuppressed()
+            guard let v = backend.get() else { return }
             DispatchQueue.main.async {
-                MainActor.assumeIsolated {
-                    let svc = BrightnessService.shared
-                    if let v { svc.store(kind, Double(v)) }
-                    if kind == .keyboard, svc.keyboardSuppressed != suppressed { svc.keyboardSuppressed = suppressed }
-                }
+                MainActor.assumeIsolated { BrightnessService.shared.store(kind, Double(v)) }
             }
         }
     }

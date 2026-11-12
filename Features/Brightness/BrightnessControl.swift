@@ -19,7 +19,7 @@ struct BrightnessControl: View {
                 .foregroundStyle(theme.iconColor.opacity(0.9))
                 .frame(width: 20)
             if expanded {
-                NotchSlider(value: service.level(kind), theme: theme, label: title, enabled: !suppressed,
+                NotchSlider(value: service.level(kind), theme: theme, label: title,
                             onChange: { service.set(kind, $0) },
                             onEnd: { service.set(kind, $0) },
                             onEditingChanged: { dragging = $0 })
@@ -37,18 +37,12 @@ struct BrightnessControl: View {
             if inside { service.refresh(kind) }   // follow changes made with the keyboard keys
         }
         .animation(spring, value: expanded)
-        .help(suppressed ? Self.suppressedHelp : title)
+        .help(title)
         .accessibilityElement(children: .contain)
         .accessibilityLabel(title)
     }
 
     private var title: String { kind == .screen ? "Screen brightness" : "Keyboard brightness" }
-
-    /// macOS has turned the keyboard light off (bright room): the slider can't change it.
-    private var suppressed: Bool { kind == .keyboard && service.keyboardSuppressed }
-
-    static let suppressedHelp = "macOS has turned the keyboard light off because the room is bright. "
-        + "It comes back in dimmer light, or turn off “Adjust keyboard brightness in low light” in System Settings › Keyboard."
 
     private var symbol: String {
         let v = service.level(kind)

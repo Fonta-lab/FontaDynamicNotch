@@ -9,12 +9,6 @@ protocol BrightnessBackend: AnyObject, Sendable {
     func probe() -> Bool
     func get() -> Float?
     func set(_ value: Float)
-    /// True when macOS is holding the control (keyboard light off in a bright room); setting does nothing then.
-    func isSuppressed() -> Bool
-}
-
-extension BrightnessBackend {
-    func isSuppressed() -> Bool { false }
 }
 
 /// Built-in display brightness via DisplayServices (private framework).
@@ -58,7 +52,8 @@ final class DisplayBrightnessBackend: BrightnessBackend, @unchecked Sendable {
 /// - uses the built-in keyboard's ID (`isKeyboardBuiltIn:`), not just the first one listed;
 /// - sets with `setBrightness:fadeSpeed:commit:forKeyboard:` (commits like the brightness keys),
 ///   falling back to `setBrightness:forKeyboard:` if that's missing or refuses;
-/// - reads `brightnessForKeyboard:`, falling back to `backlightLevelForKeyboard:`;
+/// - reads `brightnessForKeyboard:` (0…1; it reads 0 while the light is off or idle-dimmed — setting
+///   from there still works, so the control is never disabled for it);
 /// - the client and IDs are looked up when probed (and again on later probes if they weren't ready).
 final class KeyboardBrightnessBackend: BrightnessBackend, @unchecked Sendable {
     private typealias FloatIMP = @convention(c) (AnyObject, Selector, UInt64) -> Float
@@ -67,12 +62,10 @@ final class KeyboardBrightnessBackend: BrightnessBackend, @unchecked Sendable {
     private typealias SetCommitIMP = @convention(c) (AnyObject, Selector, Float, Int32, Bool, UInt64) -> Bool
 
     private let getSel = NSSelectorFromString("brightnessForKeyboard:")
-    private let levelSel = NSSelectorFromString("backlightLevelForKeyboard:")
     private let builtInSel = NSSelectorFromString("isKeyboardBuiltIn:")
     private let setSel = NSSelectorFromString("setBrightness:forKeyboard:")
     private let setCommitSel = NSSelectorFromString("setBrightness:fadeSpeed:commit:forKeyboard:")
     private let idsSel = NSSelectorFromString("copyKeyboardBacklightIDs")
-    private let suppressedSel = NSSelectorFromString("isBacklightSuppressedOnKeyboard:")
 
     private var cls: NSObject.Type?
     private var client: NSObject?
@@ -115,20 +108,9 @@ final class KeyboardBrightnessBackend: BrightnessBackend, @unchecked Sendable {
 
     func get() -> Float? {
         guard resolve(), let client, let keyboardID else { return nil }
-        for sel in [getSel, levelSel] {
-            if let f = imp(sel, FloatIMP.self) {
-                let v = f(client, sel, keyboardID)
-                if v.isFinite && v >= 0 && v <= 1 { return v }
-            }
-        }
-        return nil
-    }
-
-    /// macOS turns the keyboard light off in a well-lit room ("Adjust keyboard brightness in low
-    /// light"); while it does, the level reads 0 and changes are ignored, even from the keys.
-    func isSuppressed() -> Bool {
-        guard resolve(), let client, let keyboardID, let f = imp(suppressedSel, BoolIMP.self) else { return false }
-        return f(client, suppressedSel, keyboardID)
+        guard let f = imp(getSel, FloatIMP.self) else { return nil }
+        let v = f(client, getSel, keyboardID)
+        return v.isFinite && v >= 0 && v <= 1 ? v : nil
     }
 
     func set(_ value: Float) {
