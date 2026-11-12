@@ -10,18 +10,21 @@ struct MusicBarsView: NSViewRepresentable {
     let speed: Double
     let color: Color
     let playing: Bool
+    /// False with Reduce Motion: the bars stand still (still dimmed when paused).
+    var animated = true
 
     func makeNSView(context: Context) -> BarsLayerView { BarsLayerView() }
 
     func updateNSView(_ view: BarsLayerView, context: Context) {
-        view.configure(count: count, speed: speed, color: NSColor(color), playing: playing)
+        view.configure(count: count, speed: speed, color: NSColor(color), playing: playing, animated: animated)
     }
 }
 
 final class BarsLayerView: NSView {
     private var bars: [CALayer] = []
     private var config: (count: Int, speed: Double)?
-    private var playing = true
+    /// Whether the bars are moving (playing and motion allowed).
+    private var running = true
 
     private let barWidth: CGFloat = 3
     private let spacing: CGFloat = 2
@@ -38,7 +41,7 @@ final class BarsLayerView: NSView {
 
     override func hitTest(_ point: NSPoint) -> NSView? { nil }
 
-    func configure(count: Int, speed: Double, color: NSColor, playing: Bool) {
+    func configure(count: Int, speed: Double, color: NSColor, playing: Bool, animated: Bool) {
         if config?.count != count || config?.speed != speed {
             config = (count, speed)
             rebuildBars()
@@ -47,7 +50,8 @@ final class BarsLayerView: NSView {
         CATransaction.setDisableActions(true)
         bars.forEach { $0.backgroundColor = color.cgColor }
         CATransaction.commit()
-        setPlaying(playing)
+        setRunning(playing && animated)
+        layer?.opacity = playing ? 1 : 0.4   // paused = dimmed
     }
 
     override func layout() {
@@ -67,7 +71,7 @@ final class BarsLayerView: NSView {
             return bar
         }
         layoutBars()
-        if !playing { freeze() }
+        if !running { freeze() }
     }
 
     private func layoutBars() {
@@ -100,9 +104,9 @@ final class BarsLayerView: NSView {
         return a
     }
 
-    private func setPlaying(_ on: Bool) {
-        guard on != playing else { return }
-        playing = on
+    private func setRunning(_ on: Bool) {
+        guard on != running else { return }
+        running = on
         if on { unfreeze() } else { freeze() }
     }
 
@@ -111,7 +115,6 @@ final class BarsLayerView: NSView {
         let t = root.convertTime(CACurrentMediaTime(), from: nil)
         root.speed = 0
         root.timeOffset = t
-        root.opacity = 0.4
     }
 
     private func unfreeze() {
@@ -121,6 +124,5 @@ final class BarsLayerView: NSView {
         root.timeOffset = 0
         root.beginTime = 0
         root.beginTime = root.convertTime(CACurrentMediaTime(), from: nil) - paused
-        root.opacity = 1
     }
 }

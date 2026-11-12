@@ -14,7 +14,7 @@ struct ProgressBar: View {
             let pos = dragFraction.map { $0 * duration } ?? spotify.currentPosition(at: ctx.date)
             let fraction = duration > 0 ? min(1, max(0, pos / duration)) : 0
             VStack(spacing: Spacing.xs) {
-                NotchSlider(value: fraction, theme: theme, enabled: duration > 0,
+                NotchSlider(value: fraction, theme: theme, label: "Song position", enabled: duration > 0,
                             onChange: { dragFraction = $0 },
                             onEnd: { f in
                                 if duration > 0 { spotify.seek(to: f * duration) }

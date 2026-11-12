@@ -19,8 +19,10 @@ struct SpringSetting: Codable, Equatable, Sendable {
         blendDuration = try c.decodeIfPresent(Double.self, forKey: .blendDuration) ?? 0
     }
 
+    /// The spring, or a short fade when Reduce Motion is on.
     var animation: Animation {
-        .spring(response: response, dampingFraction: dampingFraction, blendDuration: blendDuration)
+        if Motion.reduceMotion { return Motion.reducedFade }
+        return .spring(response: response, dampingFraction: dampingFraction, blendDuration: blendDuration)
     }
 }
 

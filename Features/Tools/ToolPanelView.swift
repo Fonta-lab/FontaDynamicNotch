@@ -71,5 +71,8 @@ struct ToolButtonsView: View {
         }
         .buttonStyle(NotchButtonStyle(radius: TopBarMetrics.itemHeight / 2, tint: theme.primaryText))
         .help(tool.rawValue.capitalized)
+        .accessibilityLabel(tool.rawValue.capitalized)
+        .accessibilityValue(running ? "Running" : "")
+        .accessibilityAddTraits(selected ? .isSelected : [])
     }
 }

@@ -28,5 +28,7 @@ struct TabSwitchView: View {
         }
         .buttonStyle(.plain)
         .help(tab == .home ? "Home" : "Files")
+        .accessibilityLabel(tab == .home ? "Home" : "Files")
+        .accessibilityAddTraits(selected == tab ? .isSelected : [])
     }
 }

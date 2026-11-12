@@ -17,8 +17,10 @@ struct VolumeRow: View {
             }
             .buttonStyle(NotchButtonStyle(radius: theme.buttonRadius(height: 24), tint: theme.primaryText))
             .padding(.vertical, -3)   // 24 pt click area in the 18 pt row
+            .help(audio.isEffectivelyMuted ? "Unmute" : "Mute")
+            .accessibilityLabel(audio.isEffectivelyMuted ? "Unmute" : "Mute")
 
-            NotchSlider(value: Double(s.isMuted ? 0 : s.volume), theme: theme, enabled: s.hasVolumeControl,
+            NotchSlider(value: Double(s.isMuted ? 0 : s.volume), theme: theme, label: "Volume", enabled: s.hasVolumeControl,
                         onChange: { audio.setVolume($0) }, onEnd: { audio.setVolume($0) })
                 .help(s.hasVolumeControl ? "" : "This device has no volume control")
 
@@ -31,6 +33,8 @@ struct VolumeRow: View {
             .buttonStyle(NotchButtonStyle(radius: theme.buttonRadius(height: 24), tint: theme.primaryText))
             .padding(.vertical, -3)
             .help(audio.currentDevice?.name ?? "Output")
+            .accessibilityLabel("Output device")
+            .accessibilityValue(audio.currentDevice?.name ?? "")
         }
     }
 
@@ -70,6 +74,7 @@ struct OutputDeviceList: View {
                         .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(NotchButtonStyle(radius: theme.buttonRadius(height: 24), tint: theme.primaryText))
+                    .accessibilityAddTraits(device.id == audio.state.defaultDeviceID ? .isSelected : [])
                 }
             }
             .padding(Spacing.xs)

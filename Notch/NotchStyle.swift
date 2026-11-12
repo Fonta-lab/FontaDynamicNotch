@@ -1,4 +1,5 @@
 import SwiftUI
+import AppKit
 
 /// Spacing inside the notch, on Apple's 4/8 pt grid. Same kind of gap = same constant everywhere.
 enum Spacing {
@@ -41,13 +42,19 @@ enum TopBarMetrics {
 
 /// Small animations inside the notch. The big ones (open, close, wings, tabs…) are the user's
 /// springs from Settings › Animations.
+/// With Reduce Motion on (System Settings › Accessibility › Display) every one of them, and every
+/// user spring, becomes a short fade.
 enum Motion {
+    static var reduceMotion: Bool { NSWorkspace.shared.accessibilityDisplayShouldReduceMotion }
+    /// What replaces springs, bounces and scales when Reduce Motion is on.
+    static let reducedFade = Animation.easeOut(duration: 0.15)
+
     /// Hover, press, toggle: a quick spring with a hint of bounce.
-    static var feedback: Animation { .snappy(duration: 0.25) }
+    static var feedback: Animation { reduceMotion ? reducedFade : .snappy(duration: 0.25) }
     /// Small things appearing or changing (output list, lap list, drop targets): smooth, no bounce.
-    static var change: Animation { .smooth(duration: 0.3) }
+    static var change: Animation { reduceMotion ? reducedFade : .smooth(duration: 0.3) }
     /// The open content waits this long, so the notch starts growing before the content shows.
     static let contentDelay: Double = 0.05
     /// Content leaving on close: quicker than the shape, so it's gone before the notch shrinks.
-    static var contentOut: Animation { .smooth(duration: 0.15) }
+    static var contentOut: Animation { reduceMotion ? reducedFade : .smooth(duration: 0.15) }
 }

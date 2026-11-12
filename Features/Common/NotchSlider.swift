@@ -5,6 +5,8 @@ import SwiftUI
 struct NotchSlider: View {
     let value: Double
     let theme: Theme
+    /// What VoiceOver calls it ("Volume", "Song position"…).
+    var label = ""
     var enabled = true
     var onChange: ((Double) -> Void)? = nil
     var onEnd: ((Double) -> Void)? = nil
@@ -54,6 +56,14 @@ struct NotchSlider: View {
         .frame(height: max(theme.knobSize, 12))
         .onHover { hovering = $0 }
         .animation(Motion.feedback, value: hovering)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(label)
+        .accessibilityValue("\(Int((min(1, max(0, value)) * 100).rounded())) percent")
+        .accessibilityAdjustableAction { direction in
+            guard enabled else { return }
+            let step = direction == .increment ? 0.05 : direction == .decrement ? -0.05 : 0
+            onEnd?(min(1, max(0, value + step)))
+        }
     }
 
     private var fillColor: Color {

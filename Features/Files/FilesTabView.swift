@@ -103,6 +103,7 @@ struct ShelfItemView: View {
                 }
                 .buttonStyle(.plain)
                 .help("Remove from shelf")
+                .accessibilityLabel("Remove \(item.name) from shelf")
             }
         }
         .contentShape(Rectangle())
@@ -122,6 +123,7 @@ struct AirDropZone: View {
     var body: some View {
         DropZoneBox(symbol: "dot.radiowaves.up.forward", title: "AirDrop", message: message,
                     targeted: targeted, shake: 0, theme: theme)
+            .accessibilityAddTraits(.isButton)
             .onTapGesture {
                 let shelf = ShelfStore.shared
                 if shelf.selectedURLs.isEmpty {
@@ -156,7 +158,7 @@ struct TrashZone: View {
                 Task {
                     let failed = await ShelfStore.shared.trash(urls.filter(\.isFileURL))
                     if !failed.isEmpty {
-                        withAnimation(.linear(duration: 0.4)) { shakes += 1 }
+                        if !Motion.reduceMotion { withAnimation(.linear(duration: 0.4)) { shakes += 1 } }
                         message = failed.count == 1 ? "Couldn't trash \(failed[0])" : "Couldn't trash \(failed.count) files"
                         try? await Task.sleep(for: .seconds(2.5))
                         message = nil

@@ -18,7 +18,7 @@ struct MediaPanelView: View {
         HStack(alignment: .top, spacing: Spacing.m) {
             CoverImage(image: spotify.track != nil && spotify.isRunning ? spotify.artwork : nil, radius: theme.coverRadiusOpen)
                 .frame(width: side, height: side)
-                .matchedGeometryEffect(id: CoverImage.matchID, in: coverNamespace)
+                .modifier(CoverMatch(namespace: coverNamespace))
 
             VStack(alignment: .leading, spacing: 0) {
                 VolumeRow(theme: theme, showDevices: $showDevices)
@@ -84,15 +84,17 @@ struct MediaPanelView: View {
 
     private var controls: some View {
         HStack(spacing: 0) {
-            control("shuffle", active: spotify.shuffling) { spotify.toggleShuffle() }
-            control("backward.fill") { spotify.previousTrack() }
-            control(spotify.isPlaying ? "pause.fill" : "play.fill", size: theme.controlIconSize + 4) { spotify.playPause() }
-            control("forward.fill") { spotify.nextTrack() }
-            control("repeat", active: spotify.repeating) { spotify.toggleRepeat() }
+            control("shuffle", "Shuffle", active: spotify.shuffling) { spotify.toggleShuffle() }
+            control("backward.fill", "Previous track") { spotify.previousTrack() }
+            control(spotify.isPlaying ? "pause.fill" : "play.fill", spotify.isPlaying ? "Pause" : "Play",
+                    size: theme.controlIconSize + 4) { spotify.playPause() }
+            control("forward.fill", "Next track") { spotify.nextTrack() }
+            control("repeat", "Repeat", active: spotify.repeating) { spotify.toggleRepeat() }
         }
     }
 
-    private func control(_ symbol: String, active: Bool? = nil, size: CGFloat? = nil, action: @escaping () -> Void) -> some View {
+    private func control(_ symbol: String, _ label: String, active: Bool? = nil, size: CGFloat? = nil,
+                         action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: symbol)
                 .font(.system(size: size ?? theme.controlIconSize, weight: .semibold))
@@ -107,6 +109,9 @@ struct MediaPanelView: View {
                 .contentShape(Rectangle())
         }
         .buttonStyle(NotchButtonStyle(radius: theme.buttonRadius, tint: theme.primaryText))
+        .help(label)
+        .accessibilityLabel(label)
+        .accessibilityValue(active.map { $0 ? "On" : "Off" } ?? "")
     }
 
     private func message(_ text: String, button: String?, action: @escaping () -> Void) -> some View {

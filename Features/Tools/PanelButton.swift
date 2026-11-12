@@ -22,5 +22,6 @@ struct PanelButton: View {
         .buttonStyle(NotchButtonStyle(radius: theme.buttonRadius, filled: true, padded: false, tint: theme.primaryText))
         .disabled(!enabled)
         .help(help)
+        .accessibilityLabel(help.isEmpty ? (title ?? "") : help)
     }
 }

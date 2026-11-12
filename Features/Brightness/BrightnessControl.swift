@@ -19,7 +19,7 @@ struct BrightnessControl: View {
                 .foregroundStyle(theme.iconColor.opacity(0.9))
                 .frame(width: 20)
             if expanded {
-                NotchSlider(value: service.level(kind), theme: theme,
+                NotchSlider(value: service.level(kind), theme: theme, label: title,
                             onChange: { service.set(kind, $0) },
                             onEnd: { service.set(kind, $0) },
                             onEditingChanged: { dragging = $0 })
@@ -37,8 +37,12 @@ struct BrightnessControl: View {
             if inside { service.refresh(kind) }   // follow changes made with the keyboard keys
         }
         .animation(spring, value: expanded)
-        .help(kind == .screen ? "Screen brightness" : "Keyboard brightness")
+        .help(title)
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(title)
     }
+
+    private var title: String { kind == .screen ? "Screen brightness" : "Keyboard brightness" }
 
     private var symbol: String {
         let v = service.level(kind)

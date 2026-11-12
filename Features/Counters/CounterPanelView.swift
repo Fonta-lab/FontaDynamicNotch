@@ -9,14 +9,14 @@ struct CounterPanelView: View {
         let multiple = store.counters.count > 1
         VStack(spacing: Spacing.xs) {
             HStack(spacing: Spacing.xs) {
-                arrow("chevron.left", enabled: multiple) { store.step(-1) }
+                arrow("chevron.left", "Previous counter", enabled: multiple) { store.step(-1) }
                 Text(store.selected?.name ?? "Counter")
                     .font(.subheadline.weight(.medium))
                     .foregroundStyle(theme.secondaryText)
                     .lineLimit(1)
                     .truncationMode(.tail)
                     .frame(maxWidth: .infinity)
-                arrow("chevron.right", enabled: multiple) { store.step(1) }
+                arrow("chevron.right", "Next counter", enabled: multiple) { store.step(1) }
             }
             Spacer(minLength: 0)
             Text("\(store.selected?.value ?? 0)")
@@ -35,7 +35,7 @@ struct CounterPanelView: View {
         }
     }
 
-    private func arrow(_ symbol: String, enabled: Bool, action: @escaping () -> Void) -> some View {
+    private func arrow(_ symbol: String, _ label: String, enabled: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: symbol)
                 .font(.caption.weight(.bold))
@@ -45,5 +45,7 @@ struct CounterPanelView: View {
         .buttonStyle(NotchButtonStyle(radius: theme.buttonRadius(height: 24), tint: theme.primaryText))
         .padding(.vertical, -3)   // 24 pt click area, the name row stays 18 pt
         .disabled(!enabled)
+        .help(label)
+        .accessibilityLabel(label)
     }
 }

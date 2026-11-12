@@ -52,6 +52,7 @@ struct TimerPanelView: View {
                 }
                 .buttonStyle(.plain)
                 .help(p.name)
+                .accessibilityAddTraits(isSelected ? .isSelected : [])
             }
         }
     }

@@ -7,6 +7,7 @@ struct ClosedWingsView: View {
     let settings: AppSettings
     let coverNamespace: Namespace.ID
     private var spotify: SpotifyService { .shared }
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         let g = model.geometry
@@ -21,7 +22,7 @@ struct ClosedWingsView: View {
                 let inset = (h - side) / 2
                 CoverImage(image: spotify.artwork, radius: theme.coverRadiusClosed)
                     .frame(width: side, height: side)
-                    .matchedGeometryEffect(id: CoverImage.matchID, in: coverNamespace)
+                    .modifier(CoverMatch(namespace: coverNamespace))
                     .position(x: left.minX + inset + side / 2, y: h / 2)
                     .transition(.opacity)
             }
@@ -31,7 +32,8 @@ struct ClosedWingsView: View {
                 let barsW = CGFloat(count) * 5 - 2
                 let barsH = max(8, h - 16)
                 let inset = (h - barsH) / 2
-                MusicBarsView(count: count, speed: settings.musicBarSpeed, color: barColor(theme), playing: spotify.isPlaying)
+                MusicBarsView(count: count, speed: settings.musicBarSpeed, color: barColor(theme), playing: spotify.isPlaying,
+                              animated: !reduceMotion)
                     .frame(width: barsW, height: barsH)
                     .position(x: right.maxX - inset - barsW / 2, y: h / 2)
                     .transition(.opacity)
@@ -80,6 +82,20 @@ struct ClosedTimeView: View {
         if let r = timers.soonestRunning { return TimeFormat.countdown(r.endDate.timeIntervalSince(date)) }
         if stopwatch.isRunning { return StopwatchFormat.coarse(stopwatch.elapsed(at: date)) }
         return nil
+    }
+}
+
+/// Links the closed and open covers so the cover moves between them (not with Reduce Motion).
+struct CoverMatch: ViewModifier {
+    let namespace: Namespace.ID
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    func body(content: Content) -> some View {
+        if reduceMotion {
+            content
+        } else {
+            content.matchedGeometryEffect(id: CoverImage.matchID, in: namespace)
+        }
     }
 }
 

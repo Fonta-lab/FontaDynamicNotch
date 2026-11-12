@@ -58,7 +58,8 @@ struct NotchView: View {
     /// The notch grows first and the content follows a moment later, scaling up slightly from the
     /// top; on close the content fades out quickly, before the shape has shrunk around it.
     private var contentTransition: AnyTransition {
-        .asymmetric(
+        if Motion.reduceMotion { return .opacity }
+        return .asymmetric(
             insertion: .opacity.combined(with: .scale(scale: 0.95, anchor: .top))
                 .animation(settings.animations.open.animation.delay(Motion.contentDelay)),
             removal: .opacity.animation(Motion.contentOut))

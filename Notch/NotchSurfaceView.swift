@@ -10,9 +10,11 @@ struct NotchSurfaceView: View {
     let isOpen: Bool
     /// The cover's dominant colour while music is active, nil otherwise.
     let artwork: RGBColor?
+    /// System Settings › Accessibility › Display › Reduce transparency: glass becomes the solid look.
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
     var body: some View {
-        if theme.isGlass {
+        if theme.isGlass && !reduceTransparency {
             glassSurface
         } else {
             solidSurface
