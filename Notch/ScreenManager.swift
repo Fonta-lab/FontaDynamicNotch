@@ -106,7 +106,7 @@ final class ScreenManager {
         } else {
             // Every notch is hidden (full screen): make sure the user still hears about it.
             NotificationService.shared.post(title: "⏲ Timer ended",
-                                            body: "\(TimeFormat.label(TimerStore.shared.timer.duration)) timer")
+                                            body: TimerStore.shared.ringing.map { TimeFormat.label($0.duration) }.joined(separator: ", "))
         }
     }
 

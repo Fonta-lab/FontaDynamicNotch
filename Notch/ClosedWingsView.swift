@@ -56,7 +56,7 @@ struct ClosedWingsView: View {
     }
 }
 
-/// The running time in the closed right wing: the running timer, otherwise the running
+/// The running time in the closed right wing: the timer ending first, otherwise the running
 /// stopwatch (without centiseconds). Updates once a second, only while visible.
 struct ClosedTimeView: View {
     let theme: Theme

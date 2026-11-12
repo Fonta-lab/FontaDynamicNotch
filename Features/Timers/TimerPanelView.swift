@@ -1,25 +1,27 @@
 import SwiftUI
 
-/// Timer tool (SPEC §7.1): one timer. Starred lengths (up to 3) as chips on top, the time in the
-/// middle (set in place while idle: scroll or drag a number), and Start/Pause, Reset and a star.
+/// Timer tool (SPEC §7.1). Chips on top: each is a timer (starred, or started) with its time or
+/// live countdown, plus a + chip in the next free slot for a new timer; up to 3 run at once. The
+/// middle shows the selected timer (set in place while idle: scroll or drag a number); below,
+/// Start/Pause, Reset and a star.
 struct TimerPanelView: View {
     let theme: Theme
     private var store: TimerStore { .shared }
     @State private var toast: String?
-    private static let chipHeight: CGFloat = 20
     @State private var toastWork: DispatchWorkItem?
+    private static let chipHeight: CGFloat = 20
 
     var body: some View {
-        let t = store.timer
+        let t = store.selected
         VStack(spacing: Spacing.xs) {
-            chips(t)
+            chipRow(selected: t)
             Spacer(minLength: 0)
             if t.isIdle {
                 TimerDurationEditor(duration: t.duration, theme: theme)
             } else {
                 // Refreshes only while this panel is visible and the timer runs.
                 TimelineView(.animation(minimumInterval: 0.25, paused: !t.isRunning)) { ctx in
-                    Text(TimeFormat.countdown(store.remaining(at: ctx.date)))
+                    Text(TimeFormat.countdown(store.remaining(t, at: ctx.date)))
                         .font(ToolPanelStyle.valueFont)
                         .foregroundStyle(timeColor(t))
                         .lineLimit(1)
@@ -36,7 +38,7 @@ struct TimerPanelView: View {
                     .foregroundStyle(theme.primaryText)
                     .lineLimit(1)
                     .padding(.horizontal, Spacing.s)
-                    .frame(maxWidth: .infinity, minHeight: 20)   // covers the whole chip row
+                    .frame(maxWidth: .infinity, minHeight: Self.chipHeight)   // covers the whole chip row
                     .background(Capsule().fill(Color.black.opacity(0.9)))
                     .transition(.opacity.combined(with: .scale(scale: 0.95)))
                     .accessibilityAddTraits(.isStaticText)
@@ -45,55 +47,69 @@ struct TimerPanelView: View {
         .animation(Motion.change, value: toast)
     }
 
-    // MARK: Starred chips
+    // MARK: Chips
 
-    /// Three equal slots, so chips don't change width as stars are added or removed.
-    @ViewBuilder private func chips(_ t: TimerItem) -> some View {
-        if store.starred.isEmpty {
-            Label("Star a time to save it", systemImage: "star")
-                .font(.caption.weight(.medium))
-                .foregroundStyle(theme.secondaryText)
-                .lineLimit(1)
-                .frame(maxWidth: .infinity)
-                .frame(height: Self.chipHeight)
-        } else {
+    /// Three equal slots: the timers, then a + in the next free slot.
+    private func chipRow(selected: TimerItem) -> some View {
+        let chips = store.chips
+        let counting = chips.contains(where: \.isRunning)
+        // Live countdowns on running chips: about twice a second, only while one runs.
+        return TimelineView(.animation(minimumInterval: 0.5, paused: !counting)) { ctx in
             HStack(spacing: Spacing.xs) {
-                ForEach(0..<TimerStore.maxStars, id: \.self) { i in
-                    if i < store.starred.count {
-                        chip(store.starred[i], t)
+                ForEach(0..<TimerStore.maxChips, id: \.self) { i in
+                    if i < chips.count {
+                        chip(chips[i], isSelected: chips[i].id == selected.id, at: ctx.date)
+                    } else if i == chips.count {
+                        addChip(isSelected: !selected.isChip)
                     } else {
                         Color.clear.frame(maxWidth: .infinity)
                     }
                 }
             }
-            // Fixed height: an empty slot must not stretch and push the time down.
-            .frame(height: Self.chipHeight)
         }
+        // Fixed height: an empty slot must not stretch and push the time down.
+        .frame(height: Self.chipHeight)
     }
 
-    private func chip(_ d: TimeInterval, _ t: TimerItem) -> some View {
-        let isCurrent = d == t.duration
-        return Button { store.setDuration(d) } label: {
-            Text(TimeFormat.clock(d))
+    private func chip(_ t: TimerItem, isSelected: Bool, at date: Date) -> some View {
+        let text = t.isIdle ? TimeFormat.clock(t.duration) : TimeFormat.countdown(store.remaining(t, at: date))
+        return Button { store.select(t.id) } label: {
+            Text(text)
                 .font(.caption.weight(.semibold).monospacedDigit())
                 .lineLimit(1)
-                .foregroundStyle(theme.primaryText.opacity(isCurrent ? 1 : 0.65))
+                .foregroundStyle(theme.primaryText.opacity(isSelected ? 1 : 0.65))
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(Capsule().fill(theme.primaryText.opacity(isCurrent ? Highlight.selected : Highlight.panel)))
+                .background(Capsule().fill(theme.primaryText.opacity(isSelected ? Highlight.selected : Highlight.panel)))
                 .overlay(alignment: .topTrailing) {
-                    if isCurrent && (t.isRunning || t.isRinging) {
-                        Circle().fill(t.isRinging ? Color.red : theme.accent)
+                    if !t.isIdle {
+                        // Running: accent dot. Paused: dimmed. Ringing: red.
+                        Circle().fill(t.isRinging ? Color.red : theme.accent.opacity(t.isRunning ? 1 : 0.4))
                             .frame(width: 4, height: 4).offset(x: -Spacing.xs, y: Spacing.xxs)
                     }
                 }
                 .contentShape(Capsule())
         }
         .buttonStyle(.plain)
-        .disabled(!t.isIdle)   // the length can change only before Start (or after Reset)
-        .opacity(t.isIdle || isCurrent ? 1 : 0.5)
-        .help(t.isIdle ? "Set the timer to \(TimeFormat.label(d))" : "Reset the timer to pick another time")
-        .accessibilityLabel(TimeFormat.label(d))
-        .accessibilityAddTraits(isCurrent ? .isSelected : [])
+        .help(t.isIdle ? "\(TimeFormat.label(t.duration)) (starred)" : "\(TimeFormat.label(t.duration)) timer")
+        .accessibilityLabel("\(TimeFormat.label(t.duration)) timer")
+        .accessibilityValue(t.isRunning ? "Running" : t.isIdle ? "" : t.isRinging ? "Ended" : "Paused")
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
+    }
+
+    /// Same shape as the timer chips. Highlighted while the new timer is the one being set.
+    private func addChip(isSelected: Bool) -> some View {
+        Button { store.addTimer() } label: {
+            Image(systemName: "plus")
+                .font(.caption.weight(.bold))
+                .foregroundStyle(theme.primaryText.opacity(isSelected ? 1 : 0.65))
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Capsule().fill(theme.primaryText.opacity(isSelected ? Highlight.selected : Highlight.panel)))
+                .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .help("New timer")
+        .accessibilityLabel("New timer")
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 
     // MARK: Controls
@@ -104,14 +120,19 @@ struct TimerPanelView: View {
         case .paused: ("Resume", "play.fill")
         default: ("Start", "play.fill")
         }
-        let starred = store.isCurrentStarred
         return HStack(spacing: Spacing.s) {
-            PanelButton(theme: theme, symbol: symbol, enabled: !t.isRinging, help: help) { store.toggle() }
+            PanelButton(theme: theme, symbol: symbol, enabled: !t.isRinging, help: help) {
+                if store.toggle() == .full { showFullMessage() }
+            }
             PanelButton(theme: theme, symbol: "arrow.counterclockwise", enabled: !t.isIdle, help: "Reset") { store.reset() }
-            StarButton(starred: starred, theme: theme) {
-                if store.toggleStar() == .full { showToast("\(TimerStore.maxStars) timers already saved") }
+            StarButton(starred: t.starred, theme: theme) {
+                if store.toggleStar() == .full { showFullMessage() }
             }
         }
+    }
+
+    private func showFullMessage() {
+        showToast("\(TimerStore.maxChips) timers already saved")
     }
 
     private func showToast(_ text: String) {
@@ -156,7 +177,7 @@ private struct StarButton: View {
     }
 }
 
-/// Shown instead of the Home tab while the alarm rings (SPEC §7.4): the timer's length and a big Stop.
+/// Shown instead of the Home tab while the alarm rings (SPEC §7.4): the length of each timer that ended, and a big Stop.
 struct AlarmView: View {
     let theme: Theme
     private var timers: TimerStore { .shared }
@@ -170,13 +191,15 @@ struct AlarmView: View {
                 .symbolEffect(.variableColor.iterative.reversing, options: .repeating)
 
             VStack(alignment: .leading, spacing: Spacing.xs) {
-                Text("Timer ended")
+                Text(timers.ringing.count > 1 ? "Timers ended" : "Timer ended")
                     .font(.subheadline.weight(.medium))
                     .foregroundStyle(theme.secondaryText)
-                Text(TimeFormat.label(timers.timer.duration))
-                    .font(.title2.weight(.semibold))
-                    .foregroundStyle(theme.primaryText)
-                    .lineLimit(1)
+                ForEach(timers.ringing) { t in
+                    Text(TimeFormat.label(t.duration))
+                        .font(.title2.weight(.semibold))
+                        .foregroundStyle(theme.primaryText)
+                        .lineLimit(1)
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 

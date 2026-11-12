@@ -1,36 +1,48 @@
 import AppKit
 import Observation
 
-/// The timer (SPEC §7.1): one timer whose length is set in the notch, plus up to 3 starred
-/// lengths shown as chips. One scheduled wake-up for the end date — no per-second ticking (§12).
+/// Timers (SPEC §7.1). Up to 3 chips — each one its own timer, starred (kept) or started — that
+/// can all run at once, plus at most one "draft": the unstarred, not-started timer being set in
+/// the panel. The panel always shows the selected timer. One scheduled wake-up for the soonest
+/// end date — no per-second ticking (§12).
 @MainActor @Observable
 final class TimerStore {
     static let shared = TimerStore()
-    nonisolated static let maxStars = 3
+    nonisolated static let maxChips = 3
     static let maxDuration: TimeInterval = 24 * 3600 - 1
 
-    private(set) var timer = TimerItem()
-    /// Starred lengths, shortest first.
-    private(set) var starred: [TimeInterval] = []
+    private(set) var timers: [TimerItem] = [TimerItem()]
+    private(set) var selectedID: UUID?
+    /// Length a new timer (+) starts with: the last one set.
+    @ObservationIgnored private var lastDraftDuration: TimeInterval = 5 * 60
 
     @ObservationIgnored private var dueWork: DispatchWorkItem?
     @ObservationIgnored private var observers: [NSObjectProtocol] = []
 
-    private init() {}
-
-    var isRunning: Bool { timer.isRunning }
-    var isRinging: Bool { timer.isRinging }
-    var isCurrentStarred: Bool { starred.contains(timer.duration) }
-
-    /// When the running timer ends (shown in the closed notch).
-    var runningEndDate: Date? {
-        if case .running(let end) = timer.run { return end }
-        return nil
+    private init() {
+        selectedID = timers.first?.id
     }
 
-    func remaining(at date: Date = Date()) -> TimeInterval {
-        switch timer.run {
-        case .idle: return timer.duration
+    // MARK: Reading
+
+    var selected: TimerItem { timers.first { $0.id == selectedID } ?? timers[0] }
+    /// The chips, in the order they were added (so they don't jump around).
+    var chips: [TimerItem] { timers.filter(\.isChip) }
+    var canAddChip: Bool { chips.count < Self.maxChips }
+    var isRunning: Bool { timers.contains(where: \.isRunning) }
+    var ringing: [TimerItem] { timers.filter(\.isRinging) }
+
+    /// The soonest end date among running timers (shown in the closed notch).
+    var runningEndDate: Date? {
+        timers.compactMap { t -> Date? in
+            if case .running(let end) = t.run { return end }
+            return nil
+        }.min()
+    }
+
+    func remaining(_ t: TimerItem, at date: Date = Date()) -> TimeInterval {
+        switch t.run {
+        case .idle: return t.duration
         case .running(let end): return max(0, end.timeIntervalSince(date))
         case .paused(let r): return r
         case .ringing: return 0
@@ -39,25 +51,31 @@ final class TimerStore {
 
     // MARK: Launch / lifecycle
 
-    /// Applies saved state. If the timer ended while the app wasn't running it gets a notification
-    /// and goes back to idle; it doesn't ring (SPEC §7.1).
-    func restore(_ saved: TimerItem, starred: [TimeInterval]) {
-        var t = saved
-        self.starred = starred
-        switch t.run {
-        case .running(let end) where end <= Date():
-            t.run = .idle
-            timer = t
-            NotificationService.shared.post(
-                title: "⏲ \(TimeFormat.label(t.duration)) timer ended at \(end.formatted(date: .omitted, time: .shortened))",
-                body: "It finished while Fonta's Dynamic Notch wasn't running.")
-            StateStore.shared.markDirty()
-        case .ringing:
-            t.run = .idle
-            timer = t
-        default:
-            timer = t
+    /// Applies saved state. Timers that ended while the app wasn't running get a notification and
+    /// go back to idle; they don't ring (SPEC §7.1).
+    func restore(_ saved: [TimerItem], selectedID: UUID?) {
+        let now = Date()
+        var missed: [(TimeInterval, Date)] = []
+        timers = saved.map { t in
+            var t = t
+            switch t.run {
+            case .running(let end) where end <= now:
+                missed.append((t.duration, end))
+                t.run = .idle
+            case .ringing:
+                t.run = .idle
+            default: break
+            }
+            return t
         }
+        self.selectedID = selectedID
+        tidy()
+        for (d, end) in missed {
+            NotificationService.shared.post(
+                title: "⏲ \(TimeFormat.label(d)) timer ended at \(end.formatted(date: .omitted, time: .shortened))",
+                body: "It finished while Fonta's Dynamic Notch wasn't running.")
+        }
+        if !missed.isEmpty { StateStore.shared.markDirty() }
         reschedule()
         startObserving()
     }
@@ -65,7 +83,7 @@ final class TimerStore {
     private func startObserving() {
         guard observers.isEmpty else { return }
         let ws = NSWorkspace.shared.notificationCenter
-        // After sleep: if it ended while asleep, it rings now.
+        // After sleep: anything that ended while asleep rings now.
         observers.append(ws.addObserver(forName: NSWorkspace.didWakeNotification, object: nil, queue: .main) { _ in
             MainActor.assumeIsolated { TimerStore.shared.reschedule() }
         })
@@ -77,11 +95,35 @@ final class TimerStore {
         })
     }
 
-    // MARK: Actions
+    // MARK: Actions (on the selected timer unless said otherwise)
 
-    /// Start / Pause / Resume.
-    func toggle() {
-        change { t in
+    /// Shows a chip's timer in the panel. An unsaved draft being set is let go (its length is
+    /// remembered for the next +).
+    func select(_ id: UUID) {
+        guard id != selectedID, timers.contains(where: { $0.id == id }) else { return }
+        selectedID = id
+        tidy()
+        StateStore.shared.markDirty()
+    }
+
+    /// The + chip: a new timer to set and start alongside the others.
+    func addTimer() {
+        guard canAddChip else { return }
+        if !selected.isChip { return }   // already setting a new one
+        let t = TimerItem(duration: lastDraftDuration)
+        timers.append(t)
+        selectedID = t.id
+        StateStore.shared.markDirty()
+    }
+
+    enum ActionResult { case done, full }
+
+    /// Start / Pause / Resume. Starting a new timer makes it a chip, so it needs a free slot.
+    @discardableResult
+    func toggle() -> ActionResult {
+        let t = selected
+        if t.isIdle && !t.isChip && !canAddChip { return .full }
+        change(t.id) { t in
             switch t.run {
             case .idle: t.run = .running(endDate: Date().addingTimeInterval(t.duration))
             case .paused(let r): t.run = .running(endDate: Date().addingTimeInterval(r))
@@ -89,78 +131,113 @@ final class TimerStore {
             case .ringing: break
             }
         }
+        return .done
     }
 
     func reset() {
-        change { $0.run = .idle }
+        change(selected.id) { $0.run = .idle }
     }
 
-    /// The notch's time editor and the starred chips. Only while the timer isn't started.
+    /// The time setter. Only before Start (or after Reset). On a starred timer it changes the
+    /// saved length.
     func setDuration(_ duration: TimeInterval) {
-        change { t in
+        let d = min(Self.maxDuration, max(1, duration.rounded()))
+        change(selected.id) { t in
             guard t.isIdle else { return }
-            t.duration = min(Self.maxDuration, max(1, duration.rounded()))
+            t.duration = d
         }
+        if !selected.starred { lastDraftDuration = d }
     }
 
-    enum StarResult { case added, removed, full }
-
-    /// Stars the current length (a chip appears), or un-stars it if it's already starred.
-    /// At most `maxStars`: a fourth isn't added and `.full` comes back.
+    /// Stars the selected timer (it stays as a chip), or un-stars it. A new timer needs a free slot.
     @discardableResult
-    func toggleStar() -> StarResult {
-        let d = timer.duration
-        if let i = starred.firstIndex(of: d) {
-            starred.remove(at: i)
-            StateStore.shared.markDirty()
-            return .removed
-        }
-        guard starred.count < Self.maxStars else { return .full }
-        starred.append(d)
-        starred.sort()
-        StateStore.shared.markDirty()
-        return .added
+    func toggleStar() -> ActionResult {
+        let t = selected
+        if !t.starred && !t.isChip && !canAddChip { return .full }
+        change(t.id) { $0.starred.toggle() }
+        if !selected.starred { lastDraftDuration = selected.duration }
+        return .done
     }
 
-    /// Settings › Timers: remove a starred length.
-    func unstar(_ duration: TimeInterval) {
-        guard let i = starred.firstIndex(of: duration) else { return }
-        starred.remove(at: i)
-        StateStore.shared.markDirty()
+    /// Settings › Timers: un-star one.
+    func unstar(_ id: UUID) {
+        change(id) { $0.starred = false }
     }
 
-    /// Called by the alarm's Stop button.
+    /// Called by the alarm's Stop button: every ringing timer goes back to idle.
     func clearRinging() {
-        guard timer.isRinging else { return }
-        timer.run = .idle
+        guard timers.contains(where: \.isRinging) else { return }
+        for i in timers.indices where timers[i].isRinging { timers[i].run = .idle }
+        tidy()
         StateStore.shared.markDirty()
     }
 
-    private func change(_ body: (inout TimerItem) -> Void) {
-        var t = timer
+    /// On open (SPEC §4.3): show the timer ending first if the selected one isn't counting.
+    func selectSoonestRunningIfIdle() {
+        guard selected.isIdle else { return }
+        let soonest = timers.compactMap { t -> (UUID, Date)? in
+            if case .running(let end) = t.run { return (t.id, end) }
+            return nil
+        }.min { $0.1 < $1.1 }
+        if let soonest { select(soonest.0) }
+    }
+
+    private func change(_ id: UUID, _ body: (inout TimerItem) -> Void) {
+        guard let i = timers.firstIndex(where: { $0.id == id }) else { return }
+        var t = timers[i]
         body(&t)
-        guard t != timer else { return }
-        timer = t
+        guard t != timers[i] else { return }
+        timers[i] = t
+        tidy()
         StateStore.shared.markDirty()
         reschedule()
     }
 
+    /// Keeps the rules: timers that aren't chips only exist while selected (the draft); there's
+    /// always a selected timer; never more than `maxChips` chips.
+    private func tidy() {
+        timers.removeAll { !$0.isChip && $0.id != selectedID }
+        while timers.filter(\.isChip).count > Self.maxChips,
+              let i = timers.lastIndex(where: { $0.isChip && $0.isIdle }) {
+            timers[i].starred = false
+            if timers[i].id != selectedID { timers.remove(at: i) }
+        }
+        if !timers.contains(where: { $0.id == selectedID }) {
+            if let draft = timers.first(where: { !$0.isChip }) {
+                selectedID = draft.id
+            } else {
+                let t = TimerItem(duration: lastDraftDuration)
+                timers.append(t)
+                selectedID = t.id
+            }
+        }
+    }
+
     // MARK: Scheduling
 
-    /// One wake-up at the end date; recomputed whenever something changes.
+    /// One wake-up at the soonest end date; recomputed whenever something changes.
     func reschedule() {
         dueWork?.cancel()
         dueWork = nil
-        guard let end = runningEndDate else { return }
-        if end <= Date().addingTimeInterval(0.02) {
-            timer.run = .ringing
-            StateStore.shared.markDirty()
-            AlarmService.shared.ring(names: [TimeFormat.label(timer.duration)])
-            return
-        }
+        fireDue()
+        guard let next = runningEndDate else { return }
         let work = DispatchWorkItem { MainActor.assumeIsolated { TimerStore.shared.reschedule() } }
         dueWork = work
-        DispatchQueue.main.asyncAfter(deadline: .now() + max(0.05, end.timeIntervalSinceNow), execute: work)
+        DispatchQueue.main.asyncAfter(deadline: .now() + max(0.05, next.timeIntervalSinceNow), execute: work)
+    }
+
+    private func fireDue() {
+        let now = Date().addingTimeInterval(0.02)
+        var fired: [String] = []
+        for i in timers.indices {
+            if case .running(let end) = timers[i].run, end <= now {
+                timers[i].run = .ringing
+                fired.append(TimeFormat.label(timers[i].duration))
+            }
+        }
+        guard !fired.isEmpty else { return }
+        StateStore.shared.markDirty()
+        AlarmService.shared.ring(names: fired)
     }
 }
 
@@ -194,6 +271,7 @@ final class ToolState {
         let visible = SettingsStore.shared.settings.visibleTools
         if visible.contains(.timer), TimerStore.shared.isRunning {
             selected = .timer
+            TimerStore.shared.selectSoonestRunningIfIdle()
         } else if visible.contains(.stopwatch), StopwatchStore.shared.isRunning {
             selected = .stopwatch
         } else {

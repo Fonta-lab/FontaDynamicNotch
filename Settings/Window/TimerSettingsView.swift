@@ -11,22 +11,23 @@ struct TimerSettingsView: View {
     var body: some View {
         Form {
             Section {
-                if timers.starred.isEmpty {
+                let starred = timers.timers.filter(\.starred)
+                if starred.isEmpty {
                     Text("No starred times yet").foregroundStyle(.secondary)
                 }
-                ForEach(timers.starred, id: \.self) { d in
+                ForEach(starred) { t in
                     HStack {
-                        Label(TimeFormat.clock(d), systemImage: "star.fill")
+                        Label(TimeFormat.clock(t.duration), systemImage: "star.fill")
                             .monospacedDigit()
-                        Text(TimeFormat.label(d)).foregroundStyle(.secondary)
+                        Text(TimeFormat.label(t.duration)).foregroundStyle(.secondary)
                         Spacer()
-                        Button("Remove") { timers.unstar(d) }
+                        Button("Remove") { timers.unstar(t.id) }
                     }
                 }
             } header: {
                 Text("Starred times")
             } footer: {
-                Text("Set a time in the notch's timer and press the star to keep it as a chip (up to \(TimerStore.maxStars)).")
+                Text("In the notch's timer, press the star to keep a time as a chip, or + to add a timer that runs alongside the others (up to \(TimerStore.maxChips) in all).")
                     .font(.caption).foregroundStyle(.secondary)
             }
             Section("Alarm") {

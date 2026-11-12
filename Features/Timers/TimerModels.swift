@@ -8,29 +8,39 @@ enum TimerRun: Codable, Equatable, Sendable {
     case ringing
 }
 
-/// The one timer (SPEC §7.1): its length and run state.
-struct TimerItem: Codable, Equatable, Sendable {
+/// One timer (SPEC §7.1). Up to 3 can exist as chips (starred, or started); one more can be the
+/// "draft" being set in the panel.
+struct TimerItem: Codable, Equatable, Identifiable, Sendable {
+    var id = UUID()
     var duration: TimeInterval = 5 * 60
     var run: TimerRun = .idle
+    /// Starred = kept as a chip even when idle.
+    var starred = false
 
-    init(duration: TimeInterval = 5 * 60, run: TimerRun = .idle) {
+    init(id: UUID = UUID(), duration: TimeInterval = 5 * 60, run: TimerRun = .idle, starred: Bool = false) {
+        self.id = id
         self.duration = duration
         self.run = run
+        self.starred = starred
     }
 
     init(from decoder: any Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = (try? c.decode(UUID.self, forKey: .id)) ?? UUID()
         duration = max(1, (try? c.decode(TimeInterval.self, forKey: .duration)) ?? 5 * 60)
         run = (try? c.decode(TimerRun.self, forKey: .run)) ?? .idle
+        starred = (try? c.decode(Bool.self, forKey: .starred)) ?? false
     }
 
     var isIdle: Bool { run == .idle }
     var isRunning: Bool { if case .running = run { true } else { false } }
     var isRinging: Bool { run == .ringing }
+    /// Shown as a chip: starred, or started (running, paused or ringing).
+    var isChip: Bool { starred || !isIdle }
 }
 
 /// A preset from versions before 0.4 (5 named slots). Only read, to carry the selected one's
-/// length and run state over to the single timer.
+/// length and run state over.
 private struct LegacyTimerPreset: Decodable {
     var id: UUID?
     var duration: TimeInterval?
@@ -44,9 +54,9 @@ enum Tool: String, Codable, CaseIterable, Sendable {
 /// Everything in state.json (SPEC §11). Every key decodes with a default.
 struct PersistedState: Codable, Sendable {
     var schemaVersion = 1
-    var timer = TimerItem()
-    /// Starred timer lengths shown as chips (at most TimerStore.maxStars), shortest first.
-    var starredTimers: [TimeInterval] = []
+    /// All timers: the chips plus at most one draft.
+    var timerList: [TimerItem] = []
+    var selectedTimerID: UUID?
     var stopwatch = StopwatchState()
     var counters: [CounterItem] = [CounterItem(name: "Counter")]
     var selectedCounterID: UUID?
@@ -58,16 +68,12 @@ struct PersistedState: Codable, Sendable {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         let d = PersistedState()
         schemaVersion = (try? c.decode(Int.self, forKey: .schemaVersion)) ?? d.schemaVersion
-        if let t = try? c.decode(TimerItem.self, forKey: .timer) {
-            timer = t
-        } else if let old = try? c.decode([LegacyTimerPreset].self, forKey: .timers), !old.isEmpty {
-            // Before 0.4: keep the selected preset's length (and its run state, if it was running).
-            let selectedID = try? c.decode(UUID.self, forKey: .selectedTimerID)
-            let p = old.first { $0.id != nil && $0.id == selectedID } ?? old[0]
-            timer = TimerItem(duration: max(1, p.duration ?? 5 * 60), run: p.run ?? .idle)
+        selectedTimerID = try? c.decode(UUID.self, forKey: .selectedTimerID)
+        if let list = try? c.decode([TimerItem].self, forKey: .timerList) {
+            timerList = list
+        } else {
+            timerList = Self.migratedTimers(c, selectedID: &selectedTimerID)
         }
-        let stars = (try? c.decode([TimeInterval].self, forKey: .starredTimers)) ?? []
-        starredTimers = Array(Set(stars.filter { $0 >= 1 })).sorted().prefix(TimerStore.maxStars).map { $0 }
         stopwatch = (try? c.decode(StopwatchState.self, forKey: .stopwatch)) ?? d.stopwatch
         let cs = (try? c.decode([CounterItem].self, forKey: .counters)) ?? d.counters
         counters = cs.isEmpty ? d.counters : cs      // at least one counter always exists
@@ -75,16 +81,43 @@ struct PersistedState: Codable, Sendable {
         lastTool = (try? c.decode(Tool.self, forKey: .lastTool)) ?? d.lastTool
     }
 
+    /// Older state files: one timer + starred lengths (early 0.4), or 5 named presets (0.3).
+    private static func migratedTimers(_ c: KeyedDecodingContainer<CodingKeys>, selectedID: inout UUID?) -> [TimerItem] {
+        var current: TimerItem?
+        if let t = try? c.decode(TimerItem.self, forKey: .timer) {
+            current = t
+        } else if let old = try? c.decode([LegacyTimerPreset].self, forKey: .timers), !old.isEmpty {
+            let p = old.first { $0.id != nil && $0.id == selectedID } ?? old[0]
+            current = TimerItem(duration: max(1, p.duration ?? 5 * 60), run: p.run ?? .idle)
+        }
+        let stars = (try? c.decode([TimeInterval].self, forKey: .starredTimers)) ?? []
+        var list = Array(Set(stars.filter { $0 >= 1 })).sorted().prefix(TimerStore.maxChips)
+            .map { TimerItem(duration: $0, starred: true) }
+        if var t = current {
+            if let i = list.firstIndex(where: { $0.duration == t.duration }) {
+                list[i].run = t.run                // same length as a star: that chip carries its state
+                t = list[i]
+            } else if !t.isIdle && list.count >= TimerStore.maxChips {
+                t.run = .idle                      // no room for another chip
+                list.append(t)
+            } else {
+                list.append(t)
+            }
+            selectedID = t.id
+        }
+        return list
+    }
+
     private enum CodingKeys: String, CodingKey {
-        case schemaVersion, timer, starredTimers, stopwatch, counters, selectedCounterID, lastTool
-        case timers, selectedTimerID   // before 0.4, read only
+        case schemaVersion, timerList, selectedTimerID, stopwatch, counters, selectedCounterID, lastTool
+        case timer, starredTimers, timers   // older versions, read only
     }
 
     func encode(to encoder: any Encoder) throws {
         var c = encoder.container(keyedBy: CodingKeys.self)
         try c.encode(schemaVersion, forKey: .schemaVersion)
-        try c.encode(timer, forKey: .timer)
-        try c.encode(starredTimers, forKey: .starredTimers)
+        try c.encode(timerList, forKey: .timerList)
+        try c.encodeIfPresent(selectedTimerID, forKey: .selectedTimerID)
         try c.encode(stopwatch, forKey: .stopwatch)
         try c.encode(counters, forKey: .counters)
         try c.encodeIfPresent(selectedCounterID, forKey: .selectedCounterID)

@@ -56,7 +56,7 @@ App (SwiftUI @main + NSApplicationDelegateAdaptor)
 │   ├── AudioService        — CoreAudio volume, mute, output devices
 │   ├── BrightnessService   — built-in display brightness (private API, feature-flagged)
 │   ├── KeyboardLightService— keyboard backlight (private API, feature-flagged)
-│   ├── TimerStore          — one timer + up to 3 starred times, run state, persistence
+│   ├── TimerStore          — up to 3 timer chips (starred or running) + a draft, run state, persistence
 │   ├── StopwatchStore      — one stopwatch + laps, persistence
 │   ├── CounterStore        — named counters, persistence
 │   ├── AlarmService        — looping alarm sound, ringing state
@@ -122,7 +122,7 @@ Height = notch height ("as tall as the menu bar"), pure black, merged with the p
 | No music, timer/stopwatch running | hidden | time |
 
 - **"Music active"** = Spotify is running and the player is `playing`, or `paused` for less than 10 minutes (setting, default 10 min). A paused state shows the cover with the bars frozen and dimmed.
-- **Which time is shown:** the running timer. If it isn't running, the running stopwatch. A paused timer/stopwatch does not show in the closed state.
+- **Which time is shown:** the running timer with the least remaining time. If no timer is running, the running stopwatch. Paused timers/stopwatch do not show in the closed state.
 - Counters never appear in the closed state.
 - Closed time format: `m:ss` under 1 h, `h:mm:ss` above; stopwatch without centiseconds. Updates at **1 Hz** only.
 - Wing appear/disappear uses the "wings" spring (§9).
@@ -218,19 +218,22 @@ CoreAudio, public API [Certain].
 
 ## 7. Tools (right panel)
 
-### 7.1 Timer
-Redesigned in v0.4 at the user's request (replaces the 5 named presets and concurrent timers).
-- **One timer** `{ duration, run }`. While it's idle, its length is set right in the notch: hovering a number (hours, minutes or seconds) gives it a soft highlight; scrolling over it or dragging it up/down changes it (up = more; 1 h / 1 min / 1 s steps, 1 s – 23:59:59). No arrows or extra buttons (arrows were tried and rejected by the user).
-- **Starred times:** the Star button saves the current length; starred lengths show as chips at the top of the timer box, labelled with the time ("5:00"), shortest first, in 3 equal slots. Clicking a chip sets the timer to it (only while idle). Star again on a starred length removes it. **At most 3**: starring a 4th shows a short message "3 timers already saved" (≈1.6 s). With no stars, the chip row says "Star a time to save it". Settings › Timers lists the starred times with Remove.
+### 7.1 Timers
+Redesigned in v0.4 at the user's request (replaces the 5 named presets).
+- **Chips = timers.** Up to **3 chips** on top of the timer box, in 3 equal slots, in the order they were added. A chip is a timer that is **starred** (kept, shows its length, e.g. "5:00") or **started** (running/paused/ringing: shows its live countdown and a dot — accent when running, dim when paused, red when ringing). **Several timers can run at the same time** (one per chip).
+- **+ chip:** same shape as the timer chips, in the next free slot whenever there are fewer than 3 chips. It starts a **new timer** (the "draft") with the last length set; the + is highlighted while the draft is the one shown. Start (▶) makes the draft a running chip; the star keeps it. Selecting another chip lets an untouched draft go.
+- The middle shows the **selected** timer. While it's idle its length is set right there: hovering a number (hours, minutes or seconds) gives it a soft highlight; scrolling over it or dragging it up/down changes it (up = more; 1 h / 1 min / 1 s steps, 1 s – 23:59:59). No arrows or extra buttons (arrows were tried and rejected by the user). On a starred timer this changes its saved length.
+- **Star:** keeps the selected timer as a chip; star again to un-star (an idle un-starred timer leaves the chip row). A timer that wasn't starred leaves the chips once it has ended and the alarm is stopped (or it's reset while another chip is shown).
+- **At most 3 chips**: starring or starting a 4th shows a short message "3 timers already saved" (≈1.6 s) over the chip row. Settings › Timers lists the starred timers with Remove.
 - Controls: **Start/Pause**, **Reset** (panel buttons) and a **plain star** symbol with no box (outline = not saved, filled = saved).
 - State: `idle | running(endDate) | paused(remaining) | ringing`.
-- Scheduling: a single task that sleeps until `endDate`, recomputed whenever the timer changes and on `NSWorkspace.didWakeNotification`. No per-second ticks unless the time is visible.
+- Scheduling: a single task that sleeps until the nearest `endDate`, recomputed whenever a timer changes and on `NSWorkspace.didWakeNotification`. No per-second ticks unless a time is visible.
 - **Persistence and reboot behaviour:**
   - App running, timer ends → ring (§7.4).
   - Mac was asleep when it ended → ring on wake.
-  - App was not running (quit/reboot) when it ended → on next launch, post a notification "⏲ <length> timer ended at HH:MM" and set the timer to idle. No ringing.
+  - App was not running (quit/reboot) when it ended → on next launch, post a notification "⏲ <length> timer ended at HH:MM" and set that timer to idle. No ringing.
   - Still running across a reboot (end date in the future) → keeps counting down (wall-clock `endDate`).
-- Migration from v0.3: the selected preset's length (and run state) becomes the timer; no stars.
+- Migration: from v0.3, the selected preset becomes the shown timer (no stars); from the early-0.4 single timer, its starred lengths become starred chips.
 
 ### 7.2 Stopwatch
 - One stopwatch. State: `idle | running(startDate, accumulated) | paused(accumulated)`, plus `laps: [TimeInterval]`.
@@ -248,6 +251,7 @@ Redesigned in v0.4 at the user's request (replaces the 5 named presets and concu
 ### 7.4 Alarm
 - When a timer ends: `AVAudioPlayer` loops the selected sound (`numberOfLoops = -1`) **until dismissed**.
 - The notch **opens automatically on the screen where the mouse is**, showing the timer's length and a large **Stop** button. It does not close on mouse-leave while ringing.
+- Several timers ringing at once: their lengths are listed, and one Stop dismisses all.
 - Stop from any screen's notch stops it everywhere. The sound plays once (not once per screen).
 - Settings: sound chosen from `/System/Library/Sounds` or a user-imported audio file (copied into Application Support), preview button, alarm volume (relative).
 - If the app cannot play sound (e.g. the output device disappears), post a notification as a fallback.
@@ -320,7 +324,7 @@ Folder: `~/Library/Application Support/FontaDynamicNotch/`
 |---|---|---|
 | `settings.json` | `AppSettings` (Codable, versioned with `schemaVersion`) | debounced 0.5 s after change |
 | `themes/*.json` | one file per user theme | on save |
-| `state.json` | timer (length + run state), starred times, stopwatch, counters, last selected tool | debounced 0.5 s + on quit + on sleep |
+| `state.json` | timers (length, run state, starred), selected timer, stopwatch, counters, last selected tool | debounced 0.5 s + on quit + on sleep |
 | `sounds/` | imported alarm sounds | on import |
 
 Decoding must tolerate missing keys (defaults), so adding settings later never wipes the user's config.
@@ -386,7 +390,7 @@ Each milestone ends with a build the user runs, plus a short checklist of what t
 - Track change while dragging the progress slider.
 - Screen connected/disconnected while open; lid closed while an alarm is ringing; display scaling changed.
 - Sleep/wake with running timers and stopwatch; system clock or time-zone change.
-- Timer ending while the length is being edited or a chip is clicked.
+- Timer ending while the length is being edited or a chip is clicked; two timers ending in the same second.
 - Mission Control / Space switching; Stage Manager; "Automatically hide menu bar" enabled.
 - Very long song/artist names; very long timer/counter names.
 - Dragging a folder or many files to the Trash zone; files on read-only/network volumes.
