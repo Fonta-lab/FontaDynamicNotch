@@ -37,10 +37,9 @@ struct NotchSlider: View {
                 SliderCapsule(x: 0, width: max(theme.sliderHeight, w * v), height: theme.sliderHeight)
                     .fill(fillColor.opacity(enabled ? 1 : 0.35))
                 // Grows a little while the mouse is over the slider or dragging it (not with Reduce Motion).
-                SliderKnob(color: theme.sliderKnob, threeD: theme.knob3D,
+                SliderKnob(color: theme.sliderKnob, shadow: theme.knob3D,
                            shape: SliderCapsule(x: min(w - knobW, max(0, w * v - knobW / 2)), width: knobW,
-                                                height: theme.knobSize, scale: knobGrown ? Self.hoverKnobScale : 1),
-                           frameHeight: geo.size.height)
+                                                height: theme.knobSize, scale: knobGrown ? Self.hoverKnobScale : 1))
                     .opacity(showKnob ? 1 : 0)
                     .animation(Motion.feedback, value: knobGrown)
             }
@@ -112,41 +111,18 @@ struct SliderCapsule: InsettableShape {
     }
 }
 
-/// The slider knob in the theme's knob colour. 3D: lit from above (a soft highlight on top, a
-/// little shade at the bottom, a fine bright rim on the upper edge) with a small drop shadow, so
-/// it reads as a bead sitting on the track. Flat: just the colour.
+/// The slider knob, in the theme's knob colour exactly (no shading). With "Knob shadow" on, a soft
+/// shadow underneath separates it from a same-coloured fill and lifts it a little off the track.
 private struct SliderKnob: View {
     let color: Color
-    let threeD: Bool
+    let shadow: Bool
     let shape: SliderCapsule
-    /// Height of the slider's frame, to place the shading gradients on the knob itself.
-    let frameHeight: CGFloat
 
     var body: some View {
-        if threeD {
-            // The gradients run over the knob's own height (the shapes fill the whole slider frame).
-            let h = shape.height * shape.scale
-            let top = UnitPoint(x: 0.5, y: (frameHeight - h) / 2 / frameHeight)
-            let bottom = UnitPoint(x: 0.5, y: (frameHeight + h) / 2 / frameHeight)
-            let middle = UnitPoint(x: 0.5, y: 0.5)
-            shape
-                .fill(color)
-                .overlay(
-                    shape.fill(LinearGradient(
-                        stops: [.init(color: .white.opacity(0.45), location: 0),
-                                .init(color: .white.opacity(0), location: 0.5),
-                                .init(color: .black.opacity(0.22), location: 1)],
-                        startPoint: top, endPoint: bottom))
-                )
-                .overlay(
-                    shape.strokeBorder(LinearGradient(colors: [.white.opacity(0.7), .white.opacity(0)],
-                                                      startPoint: top, endPoint: middle),
-                                       lineWidth: 0.5)
-                )
-                .overlay(shape.strokeBorder(.black.opacity(0.12), lineWidth: 0.5))
-                .compositingGroup()
-                .shadow(color: .black.opacity(0.35), radius: 1.5, y: 1)
-                .shadow(color: .black.opacity(0.15), radius: 4, y: 2)
+        if shadow {
+            shape.fill(color)
+                .shadow(color: .black.opacity(0.4), radius: 1.5, y: 0.5)   // a crisp edge against the fill
+                .shadow(color: .black.opacity(0.2), radius: 3, y: 1.5)     // and a soft lift
         } else {
             shape.fill(color)
         }

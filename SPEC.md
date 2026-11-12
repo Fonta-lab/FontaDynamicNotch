@@ -306,7 +306,7 @@ A macOS-style window (SwiftUI, sidebar navigation like System Settings). Changes
    - **Shadow:** on/off, color, opacity, radius, y-offset.
    - **Surface:** Solid / Liquid Glass, glass variant, transparency (Clear ↔ Tinted), tint + intensity, dimming, glass when closed.
    - **Icon size** (top bar and controls separately).
-   - **Sliders:** height, knob size, knob shape (circle / capsule / none), knob visible only on hover, **3D knobs** (shading + soft shadow, default on, v0.4), fill style (solid / artwork color).
+   - **Sliders:** height, knob size, knob shape (circle / capsule / none), knob visible only on hover, **knob shadow** (a soft shadow under the knob, its colour unchanged; default on, v0.4), fill style (solid / artwork color).
 3. **Layout & Modules:** drag-to-reorder the left and right top-bar groups; show/hide each module (Home/Files, Screen brightness, Keyboard brightness, Timer, Stopwatch, Counter); open width/height; closed wing width.
 4. **Animations:** §9 springs, each with preview and reset.
 5. **Music:** Spotify permission status and button; bars count, speed and color source; marquee on/off.

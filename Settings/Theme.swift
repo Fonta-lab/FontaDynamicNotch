@@ -82,7 +82,7 @@ struct Theme: Codable, Equatable, Identifiable, Sendable {
     var knobSize: CGFloat = 10
     var knobShape: KnobShape = .circle
     var knobOnlyOnHover = true
-    /// Knobs shaded like a little bead, with a soft shadow (v0.4). Off = flat.
+    /// A soft shadow under slider knobs (v0.4; the key name is from an earlier shaded version). Off = none.
     var knob3D = true
     var sliderFillStyle: SliderFillStyle = .solid
 
