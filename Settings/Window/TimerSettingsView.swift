@@ -1,7 +1,7 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
-/// Timers (SPEC §10.6): the 5 presets, alarm sound (pick, import, preview) and volume.
+/// Timers (SPEC §10.6): starred times, alarm sound (pick, import, preview) and volume.
 struct TimerSettingsView: View {
     @Bindable private var store = SettingsStore.shared
     private var timers: TimerStore { .shared }
@@ -11,13 +11,22 @@ struct TimerSettingsView: View {
     var body: some View {
         Form {
             Section {
-                ForEach(timers.presets) { p in
-                    TimerPresetRow(preset: p)
+                if timers.starred.isEmpty {
+                    Text("No starred times yet").foregroundStyle(.secondary)
+                }
+                ForEach(timers.starred, id: \.self) { d in
+                    HStack {
+                        Label(TimeFormat.clock(d), systemImage: "star.fill")
+                            .monospacedDigit()
+                        Text(TimeFormat.label(d)).foregroundStyle(.secondary)
+                        Spacer()
+                        Button("Remove") { timers.unstar(d) }
+                    }
                 }
             } header: {
-                Text("Presets")
+                Text("Starred times")
             } footer: {
-                Text("A running timer keeps its end time; a new length applies from its next start.")
+                Text("Set a time in the notch's timer and press the star to keep it as a chip (up to \(TimerStore.maxStars)).")
                     .font(.caption).foregroundStyle(.secondary)
             }
             Section("Alarm") {
@@ -63,48 +72,5 @@ struct TimerSettingsView: View {
                 }
             }
         }
-    }
-}
-
-/// Name + hours/minutes/seconds for one preset.
-struct TimerPresetRow: View {
-    let preset: TimerPreset
-    @State private var name = ""
-
-    var body: some View {
-        let total = Int(preset.duration)
-        HStack(spacing: 10) {
-            TextField("Name", text: $name)
-                .textFieldStyle(.roundedBorder)
-                .frame(minWidth: 140)
-                .onSubmit(commitName)
-                .onChange(of: name) { commitName() }
-            Spacer()
-            field(total / 3600, "h", max: 23) { set(h: $0) }
-            field(total / 60 % 60, "m", max: 59) { set(m: $0) }
-            field(total % 60, "s", max: 59) { set(s: $0) }
-        }
-        .onAppear { name = preset.name }
-    }
-
-    private func field(_ value: Int, _ unit: String, max: Int, set: @escaping (Int) -> Void) -> some View {
-        HStack(spacing: 2) {
-            TextField(unit, value: Binding(get: { value }, set: { set(Swift.min(max, Swift.max(0, $0))) }), format: .number)
-                .textFieldStyle(.roundedBorder)
-                .multilineTextAlignment(.trailing)
-                .frame(width: 44)
-            Text(unit).foregroundStyle(.secondary)
-        }
-    }
-
-    private func commitName() {
-        let trimmed = name.trimmingCharacters(in: .whitespaces)
-        if !trimmed.isEmpty, trimmed != preset.name { TimerStore.shared.updatePreset(preset.id, name: trimmed) }
-    }
-
-    private func set(h: Int? = nil, m: Int? = nil, s: Int? = nil) {
-        let t = Int(preset.duration)
-        let total = (h ?? t / 3600) * 3600 + (m ?? t / 60 % 60) * 60 + (s ?? t % 60)
-        TimerStore.shared.updatePreset(preset.id, duration: TimeInterval(max(1, total)))
     }
 }

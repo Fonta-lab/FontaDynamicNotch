@@ -46,7 +46,7 @@ final class NotchViewModel {
 
     /// A running timer or stopwatch beats the bars.
     var rightWingContent: RightWing {
-        if TimerStore.shared.anyRunning || StopwatchStore.shared.isRunning { return .time }
+        if TimerStore.shared.isRunning || StopwatchStore.shared.isRunning { return .time }
         return SpotifyService.shared.isMusicActive ? .bars : .none
     }
 

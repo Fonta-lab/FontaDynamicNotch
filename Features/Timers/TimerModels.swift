@@ -8,39 +8,33 @@ enum TimerRun: Codable, Equatable, Sendable {
     case ringing
 }
 
-/// One of the 5 preset slots.
-struct TimerPreset: Codable, Identifiable, Equatable, Sendable {
-    var id: UUID
-    var name: String
-    var duration: TimeInterval
+/// The one timer (SPEC §7.1): its length and run state.
+struct TimerItem: Codable, Equatable, Sendable {
+    var duration: TimeInterval = 5 * 60
     var run: TimerRun = .idle
 
-    init(id: UUID = UUID(), name: String, duration: TimeInterval, run: TimerRun = .idle) {
-        self.id = id
-        self.name = name
+    init(duration: TimeInterval = 5 * 60, run: TimerRun = .idle) {
         self.duration = duration
         self.run = run
     }
 
     init(from decoder: any Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
-        id = (try? c.decode(UUID.self, forKey: .id)) ?? UUID()
-        name = (try? c.decode(String.self, forKey: .name)) ?? "Timer"
-        duration = max(1, (try? c.decode(TimeInterval.self, forKey: .duration)) ?? 300)
+        duration = max(1, (try? c.decode(TimeInterval.self, forKey: .duration)) ?? 5 * 60)
         run = (try? c.decode(TimerRun.self, forKey: .run)) ?? .idle
     }
 
+    var isIdle: Bool { run == .idle }
     var isRunning: Bool { if case .running = run { true } else { false } }
     var isRinging: Bool { run == .ringing }
+}
 
-    /// Starting values; names and durations become editable in Settings › Timers (M9). [Guess]
-    static let defaults: [TimerPreset] = [
-        TimerPreset(name: "1 min", duration: 60),
-        TimerPreset(name: "5 min", duration: 5 * 60),
-        TimerPreset(name: "10 min", duration: 10 * 60),
-        TimerPreset(name: "Pomodoro", duration: 25 * 60),
-        TimerPreset(name: "1 hour", duration: 60 * 60),
-    ]
+/// A preset from versions before 0.4 (5 named slots). Only read, to carry the selected one's
+/// length and run state over to the single timer.
+private struct LegacyTimerPreset: Decodable {
+    var id: UUID?
+    var duration: TimeInterval?
+    var run: TimerRun?
 }
 
 enum Tool: String, Codable, CaseIterable, Sendable {
@@ -50,8 +44,9 @@ enum Tool: String, Codable, CaseIterable, Sendable {
 /// Everything in state.json (SPEC §11). Every key decodes with a default.
 struct PersistedState: Codable, Sendable {
     var schemaVersion = 1
-    var timers: [TimerPreset] = TimerPreset.defaults
-    var selectedTimerID: UUID?
+    var timer = TimerItem()
+    /// Starred timer lengths shown as chips (at most TimerStore.maxStars), shortest first.
+    var starredTimers: [TimeInterval] = []
     var stopwatch = StopwatchState()
     var counters: [CounterItem] = [CounterItem(name: "Counter")]
     var selectedCounterID: UUID?
@@ -63,16 +58,37 @@ struct PersistedState: Codable, Sendable {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         let d = PersistedState()
         schemaVersion = (try? c.decode(Int.self, forKey: .schemaVersion)) ?? d.schemaVersion
-        var t = (try? c.decode([TimerPreset].self, forKey: .timers)) ?? d.timers
-        // Always exactly 5 slots.
-        if t.count < 5 { t += TimerPreset.defaults[t.count...] }
-        timers = Array(t.prefix(5))
-        selectedTimerID = try? c.decode(UUID.self, forKey: .selectedTimerID)
+        if let t = try? c.decode(TimerItem.self, forKey: .timer) {
+            timer = t
+        } else if let old = try? c.decode([LegacyTimerPreset].self, forKey: .timers), !old.isEmpty {
+            // Before 0.4: keep the selected preset's length (and its run state, if it was running).
+            let selectedID = try? c.decode(UUID.self, forKey: .selectedTimerID)
+            let p = old.first { $0.id != nil && $0.id == selectedID } ?? old[0]
+            timer = TimerItem(duration: max(1, p.duration ?? 5 * 60), run: p.run ?? .idle)
+        }
+        let stars = (try? c.decode([TimeInterval].self, forKey: .starredTimers)) ?? []
+        starredTimers = Array(Set(stars.filter { $0 >= 1 })).sorted().prefix(TimerStore.maxStars).map { $0 }
         stopwatch = (try? c.decode(StopwatchState.self, forKey: .stopwatch)) ?? d.stopwatch
         let cs = (try? c.decode([CounterItem].self, forKey: .counters)) ?? d.counters
         counters = cs.isEmpty ? d.counters : cs      // at least one counter always exists
         selectedCounterID = try? c.decode(UUID.self, forKey: .selectedCounterID)
         lastTool = (try? c.decode(Tool.self, forKey: .lastTool)) ?? d.lastTool
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case schemaVersion, timer, starredTimers, stopwatch, counters, selectedCounterID, lastTool
+        case timers, selectedTimerID   // before 0.4, read only
+    }
+
+    func encode(to encoder: any Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(schemaVersion, forKey: .schemaVersion)
+        try c.encode(timer, forKey: .timer)
+        try c.encode(starredTimers, forKey: .starredTimers)
+        try c.encode(stopwatch, forKey: .stopwatch)
+        try c.encode(counters, forKey: .counters)
+        try c.encodeIfPresent(selectedCounterID, forKey: .selectedCounterID)
+        try c.encode(lastTool, forKey: .lastTool)
     }
 }
 

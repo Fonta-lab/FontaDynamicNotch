@@ -47,7 +47,7 @@ struct ToolButtonsView: View {
         HStack(spacing: Spacing.xs) {
             ForEach(tools, id: \.self) { tool in
                 switch tool {
-                case .timer: button(.timer, "timer", running: TimerStore.shared.anyRunning)
+                case .timer: button(.timer, "timer", running: TimerStore.shared.isRunning)
                 case .stopwatch: button(.stopwatch, "stopwatch", running: StopwatchStore.shared.isRunning)
                 case .counter: button(.counter, "plusminus", running: false)
                 }

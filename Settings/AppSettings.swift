@@ -78,8 +78,8 @@ struct AppSettings: Codable, Equatable, Sendable {
     // Appearance
     var selectedThemeID = Theme.defaultID
     // Music
-    var musicBarCount = 5
-    var musicBarSpeed: Double = 1.0
+    var musicBarCount = 4
+    var musicBarSpeed: Double = 0.3
     var musicBarsUseArtworkColor = true
     var marqueeEnabled = true
     // Timers
@@ -92,11 +92,11 @@ struct AppSettings: Codable, Equatable, Sendable {
     var leftModules = TopModule.defaultLeft
     var rightModules = TopModule.defaultRight
     var hiddenModules: [TopModule] = []
-    var openWidth: Double = 600
-    var openHeight: Double = 190
-    var closedWingWidth: Double = 40
+    var openWidth: Double = 604
+    var openHeight: Double = 176
+    var closedWingWidth: Double = 39
     /// Extra height for the closed shape, because the physical notch hangs a bit below what macOS reports.
-    var closedHeightExtra: Double = 2
+    var closedHeightExtra: Double = 0
     // Advanced
     var showDebugOverlay = false
 

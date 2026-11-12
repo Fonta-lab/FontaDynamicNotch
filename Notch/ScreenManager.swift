@@ -105,7 +105,8 @@ final class ScreenManager {
             target.open(animation: settingsStore.settings.animations.alarmOpen.animation)
         } else {
             // Every notch is hidden (full screen): make sure the user still hears about it.
-            NotificationService.shared.post(title: "⏲ Timer ended", body: TimerStore.shared.ringing.map(\.name).joined(separator: ", "))
+            NotificationService.shared.post(title: "⏲ Timer ended",
+                                            body: "\(TimeFormat.label(TimerStore.shared.timer.duration)) timer")
         }
     }
 

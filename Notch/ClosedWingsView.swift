@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// What sits beside the closed notch (SPEC §4.1): the album cover on the left; on the right the
-/// running time (if a timer is running) or the music bars.
+/// running time (if the timer or stopwatch is running) or the music bars.
 struct ClosedWingsView: View {
     let model: NotchViewModel
     let settings: AppSettings
@@ -56,7 +56,7 @@ struct ClosedWingsView: View {
     }
 }
 
-/// The running time in the closed right wing: the timer ending first, otherwise the running
+/// The running time in the closed right wing: the running timer, otherwise the running
 /// stopwatch (without centiseconds). Updates once a second, only while visible.
 struct ClosedTimeView: View {
     let theme: Theme
@@ -79,7 +79,7 @@ struct ClosedTimeView: View {
     }
 
     private func text(at date: Date) -> String? {
-        if let r = timers.soonestRunning { return TimeFormat.countdown(r.endDate.timeIntervalSince(date)) }
+        if let end = timers.runningEndDate { return TimeFormat.countdown(end.timeIntervalSince(date)) }
         if stopwatch.isRunning { return StopwatchFormat.coarse(stopwatch.elapsed(at: date)) }
         return nil
     }

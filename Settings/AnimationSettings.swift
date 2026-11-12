@@ -26,14 +26,14 @@ struct SpringSetting: Codable, Equatable, Sendable {
     }
 }
 
-/// The separate springs from SPEC §9. Defaults are [Guess] starting values.
+/// The separate springs from SPEC §9. Defaults are the user's own tuning (v0.4).
 struct AnimationSettings: Codable, Equatable, Sendable {
-    var open = SpringSetting(response: 0.42, dampingFraction: 0.78)
+    var open = SpringSetting(response: 0.47, dampingFraction: 0.78)
     var close = SpringSetting(response: 0.35, dampingFraction: 0.90)
     var wings = SpringSetting(response: 0.40, dampingFraction: 0.80)
-    var brightness = SpringSetting(response: 0.30, dampingFraction: 0.85)
+    var brightness = SpringSetting(response: 0.12, dampingFraction: 1.5)
     var tabSwitch = SpringSetting(response: 0.35, dampingFraction: 0.90)
-    var alarmOpen = SpringSetting(response: 0.45, dampingFraction: 0.70)
+    var alarmOpen = SpringSetting(response: 0.32, dampingFraction: 0.65)
 
     init() {}
 

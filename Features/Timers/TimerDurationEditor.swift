@@ -1,20 +1,20 @@
 import SwiftUI
 
-/// The idle timer's time, editable right in the notch (SPEC §7.1). Hovering shows ▲▼ above and
-/// below the hours, minutes and seconds: click them, or scroll over a number. Every change is
-/// saved into the chip (TimerStore.setDuration).
+/// The idle timer's time, editable right in the notch (SPEC §7.1). Hovering shows small chevrons
+/// above and below the hours, minutes and seconds: click them, or scroll over a number.
 struct TimerDurationEditor: View {
-    let preset: TimerPreset
+    let duration: TimeInterval
     let theme: Theme
-    /// True while the arrows show (the panel hides the timer's name, which the arrows cover).
-    @Binding var hovering: Bool
+    @State private var hovering = false
     @State private var hideWork: DispatchWorkItem?
 
-    static let maxDuration: TimeInterval = 24 * 3600 - 1
-    /// The ▲▼ sit in the room above and below the digits; the hover area reaches that far too.
-    private static let arrowHeight: CGFloat = 20
-    /// How far the arrows tuck into the empty space at the top and bottom of the digits' line.
-    private nonisolated static let arrowTuck: CGFloat = 5
+    /// Click area of each chevron. Only the glyph is drawn (no highlight box), and it sits in the
+    /// empty space at the top / bottom of the digits' line, so it never covers the chips or buttons.
+    private static let arrowHeight: CGFloat = 16
+    private static let arrowWidth: CGFloat = 32
+    /// How far each arrow's area tucks into the digits' line (its empty top / bottom).
+    private nonisolated static let arrowTuckTop: CGFloat = 6
+    private nonisolated static let arrowTuckBottom: CGFloat = 5
 
     enum Unit: CaseIterable {
         case hours, minutes, seconds
@@ -35,7 +35,7 @@ struct TimerDurationEditor: View {
     }
 
     var body: some View {
-        let total = Int(preset.duration.rounded())
+        let total = Int(duration.rounded())
         let h = total / 3600, m = total / 60 % 60, s = total % 60
         // Same look as the running time (m:ss, or h:mm:ss from one hour), so nothing jumps on Start.
         HStack(spacing: 0) {
@@ -54,10 +54,12 @@ struct TimerDurationEditor: View {
         .lineLimit(1)
         .fixedSize()
         // Hover area includes the arrows above and below (the layout size doesn't change).
-        .padding(.vertical, Self.arrowHeight - Self.arrowTuck)
+        .padding(.top, Self.arrowHeight - Self.arrowTuckTop)
+        .padding(.bottom, Self.arrowHeight - Self.arrowTuckBottom)
         .contentShape(Rectangle())
         .onHover(perform: setHovering)
-        .padding(.vertical, Self.arrowTuck - Self.arrowHeight)
+        .padding(.top, Self.arrowTuckTop - Self.arrowHeight)
+        .padding(.bottom, Self.arrowTuckBottom - Self.arrowHeight)
         .animation(Motion.feedback, value: hovering)
     }
 
@@ -70,11 +72,11 @@ struct TimerDurationEditor: View {
             .overlay { ScrollWheelCatcher { change(unit, by: $0) } }
             .overlay(alignment: .top) {
                 arrow("chevron.up", unit, +1)
-                    .alignmentGuide(.top) { $0[.bottom] - Self.arrowTuck }
+                    .alignmentGuide(.top) { $0[.bottom] - Self.arrowTuckTop }
             }
             .overlay(alignment: .bottom) {
                 arrow("chevron.down", unit, -1)
-                    .alignmentGuide(.bottom) { $0[.top] + Self.arrowTuck }
+                    .alignmentGuide(.bottom) { $0[.top] + Self.arrowTuckBottom }
             }
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(unit.name)
@@ -89,24 +91,18 @@ struct TimerDurationEditor: View {
     }
 
     private func arrow(_ symbol: String, _ unit: Unit, _ direction: Int) -> some View {
-        Button { change(unit, by: direction) } label: {
-            Image(systemName: symbol)
-                .font(.caption.weight(.bold))
-                .foregroundStyle(theme.primaryText.opacity(0.8))
-                .frame(width: 28, height: Self.arrowHeight)
-                .contentShape(Rectangle())
-        }
-        .buttonStyle(NotchButtonStyle(radius: theme.buttonRadius(height: Self.arrowHeight), tint: theme.primaryText))
-        .opacity(hovering ? 1 : 0)
-        .allowsHitTesting(hovering)
-        .help(direction > 0 ? "More \(unit.name.lowercased())" : "Fewer \(unit.name.lowercased())")
-        .accessibilityHidden(true)   // the segment itself is adjustable
+        StepArrow(symbol: symbol, color: theme.primaryText,
+                  width: Self.arrowWidth, height: Self.arrowHeight) { change(unit, by: direction) }
+            .opacity(hovering ? 1 : 0)
+            .allowsHitTesting(hovering)
+            .help(direction > 0 ? "More \(unit.name.lowercased())" : "Fewer \(unit.name.lowercased())")
+            .accessibilityHidden(true)   // the segment itself is adjustable
     }
 
     private func change(_ unit: Unit, by steps: Int) {
-        let new = min(Self.maxDuration, max(1, preset.duration + Double(steps) * unit.step))
-        guard new != preset.duration else { return }
-        TimerStore.shared.setDuration(preset.id, new)
+        let new = min(TimerStore.maxDuration, max(1, duration + Double(steps) * unit.step))
+        guard new != duration else { return }
+        TimerStore.shared.setDuration(new)
     }
 
     /// Shows the arrows at once; hides them after a short grace period, so moving from the digits
@@ -121,5 +117,29 @@ struct TimerDurationEditor: View {
             hideWork = work
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3, execute: work)
         }
+    }
+}
+
+/// A chevron with no box: dim at rest, full colour and a touch bigger under the mouse.
+private struct StepArrow: View {
+    let symbol: String
+    let color: Color
+    let width: CGFloat
+    let height: CGFloat
+    let action: () -> Void
+    @State private var hovering = false
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: symbol)
+                .font(.caption.weight(.bold))
+                .foregroundStyle(color.opacity(hovering ? 1 : 0.6))
+                .scaleEffect(hovering && !Motion.reduceMotion ? 1.2 : 1)
+                .frame(width: width, height: height)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .onHover { hovering = $0 }
+        .animation(Motion.feedback, value: hovering)
     }
 }

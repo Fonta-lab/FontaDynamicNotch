@@ -56,7 +56,7 @@ App (SwiftUI @main + NSApplicationDelegateAdaptor)
 │   ├── AudioService        — CoreAudio volume, mute, output devices
 │   ├── BrightnessService   — built-in display brightness (private API, feature-flagged)
 │   ├── KeyboardLightService— keyboard backlight (private API, feature-flagged)
-│   ├── TimerStore          — 5 presets, run state, persistence
+│   ├── TimerStore          — one timer + up to 3 starred times, run state, persistence
 │   ├── StopwatchStore      — one stopwatch + laps, persistence
 │   ├── CounterStore        — named counters, persistence
 │   ├── AlarmService        — looping alarm sound, ringing state
@@ -122,7 +122,7 @@ Height = notch height ("as tall as the menu bar"), pure black, merged with the p
 | No music, timer/stopwatch running | hidden | time |
 
 - **"Music active"** = Spotify is running and the player is `playing`, or `paused` for less than 10 minutes (setting, default 10 min). A paused state shows the cover with the bars frozen and dimmed.
-- **Which time is shown:** the running timer with the least remaining time wins. If no timer is running, the running stopwatch. Paused timers/stopwatch do not show in the closed state.
+- **Which time is shown:** the running timer. If it isn't running, the running stopwatch. A paused timer/stopwatch does not show in the closed state.
 - Counters never appear in the closed state.
 - Closed time format: `m:ss` under 1 h, `h:mm:ss` above; stopwatch without centiseconds. Updates at **1 Hz** only.
 - Wing appear/disappear uses the "wings" spring (§9).
@@ -150,7 +150,7 @@ Do **not** close while:
  ╰──────────────────────────────────────────────────────────────────────────╯
 ```
 
-- Default open size: **600 × 190 pt** including the top bar (chosen by the user after M2). Configurable.
+- Default open size: **604 × 176 pt** including the top bar (the user's own setting, made the default in v0.4; 600 × 190 before). Configurable.
 - Top corners have **outward concave fillets** that merge into the menu bar (as in the drawing). Bottom corners are rounded.
 - **Top bar left group** (left of the real notch), default order: Home/Files toggle (Boring-Notch style pair of icons), Screen brightness, Keyboard brightness.
 - **Top bar right group** (right of the real notch), default order: Timer, Stopwatch, Counter. The selected tool is highlighted; clicking selects which tool the right panel shows.
@@ -194,7 +194,7 @@ Spotify's AppleScript interface, **not** MediaRemote (which is restricted since 
 - Fake visualizer, not real audio analysis (decided by the user).
 - 5 bars [Guess], random target heights, smooth spring between targets. Color = dominant artwork color (lightened) or theme color (setting).
 - Animate **only** when music is playing and the wing is visible; otherwise freeze. Use `TimelineView(.animation(minimumInterval: 1/30))` or equivalent: cap at 30 fps.
-- Settings: bar count (3–8), speed, color source.
+- Settings: bar count (3–8, default 4), speed (default 0.3), color source.
 
 ### 5.4 Dominant color
 - Downscale the artwork to ~40×40, cluster (k-means, k=5), and prefer the largest cluster with saturation > 0.2 and brightness between 0.15 and 0.9. Fall back to the average color.
@@ -218,19 +218,19 @@ CoreAudio, public API [Certain].
 
 ## 7. Tools (right panel)
 
-### 7.1 Timers
-- **5 preset slots**, each `{ id, name, duration }`. Names and durations are edited in Settings › Timers.
-- **Set the length from the notch** (added 2026-11-12 at the user's request): while the selected timer is idle, hovering its time shows ▲▼ above and below the hours, minutes and seconds (the name above hides while they show); clicking them or scrolling over a number changes it (1 h / 1 min / 1 s steps, 1 s – 23:59:59). The new length is **saved into the chip** (same as Settings). A chip name that just describes its length ("5 min") follows the new one ("12 min 30 s"); custom names stay.
-- Panel layout: a row of 5 chips (short names, truncated) above the large time display. Click a chip to select it. Running timers show a dot on their chip. The selected timer's full name appears above the time.
-- Controls: **Start/Pause** (one toggle button) and **Reset** (separate button), per the user's choice of two buttons.
-- **Several timers can run at the same time.**
-- State per preset: `idle | running(endDate) | paused(remaining) | ringing`.
-- Scheduling: a single task that sleeps until the nearest `endDate`, recomputed whenever a timer changes and on `NSWorkspace.didWakeNotification`. No per-second ticks unless a time is visible.
+### 7.1 Timer
+Redesigned in v0.4 at the user's request (replaces the 5 named presets and concurrent timers).
+- **One timer** `{ duration, run }`. While it's idle, its length is set right in the notch: hovering the time shows small chevrons above and below the hours, minutes and seconds (glyph only, no box, in the empty space of the digits' line so they never cover the chips or buttons); clicking them or scrolling over a number changes it (1 h / 1 min / 1 s steps, 1 s – 23:59:59).
+- **Starred times:** the Star button saves the current length; starred lengths show as chips at the top of the timer box, labelled with the time ("5:00"), shortest first, in 3 equal slots. Clicking a chip sets the timer to it (only while idle). Star again on a starred length removes it. **At most 3**: starring a 4th shows a short message "3 timers already saved" (≈1.6 s). With no stars, the chip row says "Star a time to save it". Settings › Timers lists the starred times with Remove.
+- Controls: **Start/Pause**, **Reset**, **Star**.
+- State: `idle | running(endDate) | paused(remaining) | ringing`.
+- Scheduling: a single task that sleeps until `endDate`, recomputed whenever the timer changes and on `NSWorkspace.didWakeNotification`. No per-second ticks unless the time is visible.
 - **Persistence and reboot behaviour:**
   - App running, timer ends → ring (§7.4).
   - Mac was asleep when it ended → ring on wake.
-  - App was not running (quit/reboot) when it ended → on next launch, post a notification "⏲ <name> ended at HH:MM" and set the timer to idle. No ringing.
+  - App was not running (quit/reboot) when it ended → on next launch, post a notification "⏲ <length> timer ended at HH:MM" and set the timer to idle. No ringing.
   - Still running across a reboot (end date in the future) → keeps counting down (wall-clock `endDate`).
+- Migration from v0.3: the selected preset's length (and run state) becomes the timer; no stars.
 
 ### 7.2 Stopwatch
 - One stopwatch. State: `idle | running(startDate, accumulated) | paused(accumulated)`, plus `laps: [TimeInterval]`.
@@ -247,8 +247,7 @@ CoreAudio, public API [Certain].
 
 ### 7.4 Alarm
 - When a timer ends: `AVAudioPlayer` loops the selected sound (`numberOfLoops = -1`) **until dismissed**.
-- The notch **opens automatically on the screen where the mouse is**, showing the timer name and a large **Stop** button. It does not close on mouse-leave while ringing.
-- Several timers ringing at once: a stacked list, with one Stop that dismisses all.
+- The notch **opens automatically on the screen where the mouse is**, showing the timer's length and a large **Stop** button. It does not close on mouse-leave while ringing.
 - Stop from any screen's notch stops it everywhere. The sound plays once (not once per screen).
 - Settings: sound chosen from `/System/Library/Sounds` or a user-imported audio file (copied into Application Support), preview button, alarm volume (relative).
 - If the app cannot play sound (e.g. the output device disappears), post a notification as a fallback.
@@ -277,14 +276,14 @@ All springs use SwiftUI springs, exposed in Settings with **full parameters**:
 
 Separate spring per animation, each with a live **Preview** button and "Reset to default":
 
-| Animation | Default (response / damping) [Guess] |
+| Animation | Default (response / damping); since v0.4 the user's own tuning |
 |---|---|
-| Open | 0.42 / 0.78 |
+| Open | 0.47 / 0.78 |
 | Close | 0.35 / 0.90 |
 | Closed wings appear/disappear | 0.40 / 0.80 |
-| Brightness slider expand/collapse | 0.30 / 0.85 |
+| Brightness slider expand/collapse | 0.12 / 1.5 |
 | Tab switch (Home ↔ Files, tool switch) | 0.35 / 0.90 |
-| Alarm auto-open | 0.45 / 0.70 |
+| Alarm auto-open | 0.32 / 0.65 |
 
 Also configurable: hover-open delay (default 0.10 s) and close delay (default 0 s).
 
@@ -307,7 +306,7 @@ A macOS-style window (SwiftUI, sidebar navigation like System Settings). Changes
 3. **Layout & Modules:** drag-to-reorder the left and right top-bar groups; show/hide each module (Home/Files, Screen brightness, Keyboard brightness, Timer, Stopwatch, Counter); open width/height; closed wing width.
 4. **Animations:** §9 springs, each with preview and reset.
 5. **Music:** Spotify permission status and button; bars count, speed and color source; marquee on/off.
-6. **Timers:** the 5 presets (name + h/m/s duration); alarm sound picker, import, preview; alarm volume.
+6. **Timers:** starred times (list, remove); alarm sound picker, import, preview; alarm volume.
 7. **Counters:** list with add, rename, delete, reorder.
 8. **Advanced:** feature availability report (Brightness API ✓/✗, Keyboard API ✓/✗, Spotify permission, Notifications permission), debug geometry overlay, reset all settings, open data folder.
 
@@ -321,7 +320,7 @@ Folder: `~/Library/Application Support/FontaDynamicNotch/`
 |---|---|---|
 | `settings.json` | `AppSettings` (Codable, versioned with `schemaVersion`) | debounced 0.5 s after change |
 | `themes/*.json` | one file per user theme | on save |
-| `state.json` | timers (presets + run state), stopwatch, counters, last selected tool | debounced 0.5 s + on quit + on sleep |
+| `state.json` | timer (length + run state), starred times, stopwatch, counters, last selected tool | debounced 0.5 s + on quit + on sleep |
 | `sounds/` | imported alarm sounds | on import |
 
 Decoding must tolerate missing keys (defaults), so adding settings later never wipes the user's config.
@@ -387,7 +386,7 @@ Each milestone ends with a build the user runs, plus a short checklist of what t
 - Track change while dragging the progress slider.
 - Screen connected/disconnected while open; lid closed while an alarm is ringing; display scaling changed.
 - Sleep/wake with running timers and stopwatch; system clock or time-zone change.
-- Two timers ending in the same second.
+- Timer ending while the length is being edited or a chip is clicked.
 - Mission Control / Space switching; Stage Manager; "Automatically hide menu bar" enabled.
 - Very long song/artist names; very long timer/counter names.
 - Dragging a folder or many files to the Trash zone; files on read-only/network volumes.

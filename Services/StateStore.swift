@@ -22,7 +22,7 @@ final class StateStore {
         ToolState.shared.restore(state.lastTool)
         StopwatchStore.shared.restore(state.stopwatch)
         CounterStore.shared.restore(state.counters, selectedID: state.selectedCounterID)
-        TimerStore.shared.restore(state.timers, selectedID: state.selectedTimerID)
+        TimerStore.shared.restore(state.timer, starred: state.starredTimers)
     }
 
     func markDirty() {
@@ -45,8 +45,8 @@ final class StateStore {
 
     private func snapshot() -> PersistedState {
         var s = PersistedState()
-        s.timers = TimerStore.shared.presets
-        s.selectedTimerID = TimerStore.shared.selectedID
+        s.timer = TimerStore.shared.timer
+        s.starredTimers = TimerStore.shared.starred
         s.stopwatch = StopwatchStore.shared.state
         s.counters = CounterStore.shared.counters
         s.selectedCounterID = CounterStore.shared.selectedID
