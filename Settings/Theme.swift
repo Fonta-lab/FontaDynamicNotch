@@ -98,8 +98,6 @@ struct Theme: Codable, Equatable, Identifiable, Sendable {
     var glassDimming: Double = 0.1
     /// Glass in the closed state too. Off: closed stays black like the physical notch.
     var glassWhenClosed = false
-    /// Extra blur of what's behind the glass, 0…1. 0 = the glass's own (system-fixed) blur only.
-    var glassBlur: Double = 0
 
     /// The built-in Default theme. Since v0.3 these are the user's own settings (Liquid Glass).
     /// `Theme()` keeps the original v0.2 values: they're the fallback for keys missing from a theme
@@ -182,6 +180,5 @@ struct Theme: Codable, Equatable, Identifiable, Sendable {
         glassDimming = v(.glassDimming, d.glassDimming)
         glassOpacity = v(.glassOpacity, d.glassOpacity)
         glassWhenClosed = v(.glassWhenClosed, d.glassWhenClosed)
-        glassBlur = min(1, max(0, v(.glassBlur, d.glassBlur)))
     }
 }

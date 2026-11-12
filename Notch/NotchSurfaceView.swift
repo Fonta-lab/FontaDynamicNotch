@@ -51,13 +51,6 @@ struct NotchSurfaceView: View {
             // The theme's shadow, cut out under the shape so it doesn't darken the glass.
             OuterShadow(shape: shape, theme: theme)
                 .opacity(isOpen && theme.shadowEnabled ? 1 : 0)
-            // Blur behind the notch (Settings › Appearance › Surface › Blur). The system glass's blur
-            // can't be changed, so a blurred material underneath fades in with the slider; it's
-            // independent of Transparency.
-            if theme.glassBlur > 0 {
-                shape.fill(.ultraThinMaterial)
-                    .opacity(glassShown ? theme.glassBlur : 0)
-            }
             ZStack {
                 if #available(macOS 26, *), GlassSupport.isFullGlassAvailable {
                     LiquidGlassSurface(shape: shape, glass: theme.glass())
