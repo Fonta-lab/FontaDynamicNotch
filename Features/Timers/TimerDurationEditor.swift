@@ -2,7 +2,8 @@ import SwiftUI
 
 /// The idle timer's time, set right in the notch (SPEC §7.1). Hovering a number (hours, minutes
 /// or seconds) gives it a soft highlight; scroll over it, or drag it up or down, to change it.
-/// Up = more. No extra buttons.
+/// Up = more. Clicking the hours rounds to the hour (mm:ss → 00:00); clicking the minutes rounds
+/// to the minute (ss → 00). No extra buttons.
 struct TimerDurationEditor: View {
     let duration: TimeInterval
     let theme: Theme
@@ -52,7 +53,17 @@ struct TimerDurationEditor: View {
     }
 
     private func segment(_ unit: Unit, _ text: String, value: Int) -> some View {
-        TimeSegment(text: text, unit: unit, value: value, theme: theme) { change(unit, by: $0) }
+        TimeSegment(text: text, unit: unit, value: value, theme: theme,
+                    onStep: { change(unit, by: $0) },
+                    onTap: unit == .seconds ? nil : { roundDown(to: unit) })
+    }
+
+    /// Clears everything smaller than `unit`: hours → minutes and seconds 00, minutes → seconds 00.
+    /// Nothing happens if that would leave 0:00.
+    private func roundDown(to unit: Unit) {
+        let new = (duration / unit.step).rounded(.down) * unit.step
+        guard new >= 1, new != duration else { return }
+        TimerStore.shared.setDuration(new)
     }
 
     private func change(_ unit: Unit, by steps: Int) {
@@ -69,6 +80,8 @@ private struct TimeSegment: View {
     let value: Int
     let theme: Theme
     let onStep: (Int) -> Void
+    /// Click / tap (hours and minutes only): round down to this unit.
+    let onTap: (() -> Void)?
 
     @State private var hovering = false
     @State private var dragging = false
@@ -91,6 +104,7 @@ private struct TimeSegment: View {
             .overlay { ScrollWheelCatcher(onStep: onStep) }
             .contentShape(Rectangle())
             .gesture(
+                // A drag changes the number; a click without moving rounds (see onTap).
                 DragGesture(minimumDistance: 2)
                     .onChanged { g in
                         dragging = true
@@ -104,10 +118,11 @@ private struct TimeSegment: View {
                         dragging = false
                         dragSteps = 0
                     }
+                    .exclusively(before: TapGesture().onEnded { onTap?() })
             )
             .notchHover { hovering = $0 }
             .animation(Motion.feedback, value: highlighted)
-            .help("Scroll, or drag up or down, to change the \(unit.name.lowercased())")
+            .help(helpText)
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(unit.name)
             .accessibilityValue("\(value)")
@@ -118,5 +133,15 @@ private struct TimeSegment: View {
                 @unknown default: break
                 }
             }
+            .accessibilityAction(named: unit == .hours ? "Round to the hour" : "Round to the minute") { onTap?() }
+    }
+
+    private var helpText: String {
+        let change = "Scroll, or drag up or down, to change the \(unit.name.lowercased())"
+        switch unit {
+        case .hours: return change + ". Click to set minutes and seconds to 00."
+        case .minutes: return change + ". Click to set the seconds to 00."
+        case .seconds: return change + "."
+        }
     }
 }
