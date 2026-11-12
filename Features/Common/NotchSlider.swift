@@ -16,6 +16,13 @@ struct NotchSlider: View {
     @State private var dragValue: Double?
     @State private var hovering = false
 
+    /// How much bigger the knob gets on hover.
+    static let hoverKnobScale: CGFloat = 1.25
+
+    private var knobGrown: Bool {
+        enabled && (hovering || dragValue != nil) && !Motion.reduceMotion
+    }
+
     var body: some View {
         GeometryReader { geo in
             let w = max(1, geo.size.width)
@@ -30,8 +37,11 @@ struct NotchSlider: View {
                 Capsule()
                     .fill(theme.sliderKnob)
                     .frame(width: knobW, height: theme.knobSize)
+                    // Grows a little while the mouse is over the slider or dragging it (not with Reduce Motion).
+                    .scaleEffect(knobGrown ? Self.hoverKnobScale : 1)
                     .offset(x: min(w - knobW, max(0, w * v - knobW / 2)))
                     .opacity(showKnob ? 1 : 0)
+                    .animation(Motion.feedback, value: knobGrown)
             }
             .frame(height: geo.size.height)
             .contentShape(Rectangle())
