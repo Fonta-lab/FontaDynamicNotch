@@ -2,8 +2,8 @@ import SwiftUI
 
 /// Timer tool (SPEC §7.1). Chips on top: each is a timer (starred, or started) with its time or
 /// live countdown, plus a + chip in the next free slot for a new timer; up to 3 run at once. The
-/// middle shows the selected timer (set in place while idle: scroll or drag a number); below,
-/// Start/Pause, Reset and a star.
+/// middle shows the selected timer (set in place while idle: scroll or drag a number) with the
+/// star on its right; below, Start/Pause and Reset.
 struct TimerPanelView: View {
     let theme: Theme
     private var store: TimerStore { .shared }
@@ -16,16 +16,12 @@ struct TimerPanelView: View {
         VStack(spacing: Spacing.xs) {
             chipRow(selected: t)
             Spacer(minLength: 0)
-            if t.isIdle {
-                TimerDurationEditor(duration: t.duration, theme: theme)
-            } else {
-                // Refreshes only while this panel is visible and the timer runs.
-                TimelineView(.animation(minimumInterval: 0.25, paused: !t.isRunning)) { ctx in
-                    Text(TimeFormat.countdown(store.remaining(t, at: ctx.date)))
-                        .font(ToolPanelStyle.valueFont)
-                        .foregroundStyle(timeColor(t))
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.6)
+            // The star sits right of the time; an equal empty space on the left keeps the time centred.
+            HStack(spacing: 0) {
+                Color.clear.frame(width: StarButton.width, height: 1)
+                time(t).frame(maxWidth: .infinity)
+                StarButton(starred: t.starred, theme: theme) {
+                    if store.toggleStar() == .full { showFullMessage() }
                 }
             }
             Spacer(minLength: 0)
@@ -125,8 +121,26 @@ struct TimerPanelView: View {
                 if store.toggle() == .full { showFullMessage() }
             }
             PanelButton(theme: theme, symbol: "arrow.counterclockwise", enabled: !t.isIdle, help: "Reset") { store.reset() }
-            StarButton(starred: t.starred, theme: theme) {
-                if store.toggleStar() == .full { showFullMessage() }
+        }
+    }
+
+    /// The selected timer's time: editable while idle, a countdown otherwise.
+    @ViewBuilder private func time(_ t: TimerItem) -> some View {
+        if t.isIdle {
+            // Very long times (10 h and more) step down to Title so they fit beside the star.
+            ViewThatFits(in: .horizontal) {
+                TimerDurationEditor(duration: t.duration, theme: theme)
+                TimerDurationEditor(duration: t.duration, theme: theme,
+                                    font: .title.weight(.semibold).monospacedDigit())
+            }
+        } else {
+            // Refreshes only while this panel is visible and the timer runs.
+            TimelineView(.animation(minimumInterval: 0.25, paused: !t.isRunning)) { ctx in
+                Text(TimeFormat.countdown(store.remaining(t, at: ctx.date)))
+                    .font(ToolPanelStyle.valueFont)
+                    .foregroundStyle(timeColor(t))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
             }
         }
     }
@@ -152,12 +166,13 @@ struct TimerPanelView: View {
     }
 }
 
-/// The star next to Start and Reset: just the symbol, no box. Outline = not saved, filled = saved.
+/// The star right of the time: just the symbol, no box. Outline = not saved, filled = saved.
 private struct StarButton: View {
     let starred: Bool
     let theme: Theme
     let action: () -> Void
     @State private var hovering = false
+    static let width: CGFloat = 28
 
     var body: some View {
         Button(action: action) {
@@ -166,7 +181,7 @@ private struct StarButton: View {
                 .foregroundStyle(theme.iconColor.opacity(starred || hovering ? 1 : 0.7))
                 .scaleEffect(hovering && !Motion.reduceMotion ? 1.12 : 1)
                 .contentTransition(.symbolEffect(.replace))
-                .frame(width: 28, height: 26)
+                .frame(width: Self.width, height: 26)
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)

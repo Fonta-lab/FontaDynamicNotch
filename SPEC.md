@@ -225,7 +225,7 @@ Redesigned in v0.4 at the user's request (replaces the 5 named presets).
 - The middle shows the **selected** timer. While it's idle its length is set right there: hovering a number (hours, minutes or seconds) gives it a soft highlight; scrolling over it or dragging it up/down changes it (up = more; 1 h / 1 min / 1 s steps, 1 s – 23:59:59). No arrows or extra buttons (arrows were tried and rejected by the user). On a starred timer this changes its saved length.
 - **Star:** keeps the selected timer as a chip; star again to un-star (an idle un-starred timer leaves the chip row). A timer that wasn't starred leaves the chips once it has ended and the alarm is stopped (or it's reset while another chip is shown).
 - **At most 3 chips**: starring or starting a 4th shows a short message "3 timers already saved" (≈1.6 s) over the chip row. Settings › Timers lists the starred timers with Remove.
-- Controls: **Start/Pause**, **Reset** (panel buttons) and a **plain star** symbol with no box (outline = not saved, filled = saved).
+- Controls: **Start/Pause** and **Reset** (panel buttons, bottom row) and a **plain star** symbol with no box **right of the time** (outline = not saved, filled = saved); an equal empty space on the left keeps the time centred.
 - State: `idle | running(endDate) | paused(remaining) | ringing`.
 - Scheduling: a single task that sleeps until the nearest `endDate`, recomputed whenever a timer changes and on `NSWorkspace.didWakeNotification`. No per-second ticks unless a time is visible.
 - **Persistence and reboot behaviour:**

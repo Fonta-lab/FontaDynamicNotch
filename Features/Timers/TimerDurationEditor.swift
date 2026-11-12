@@ -6,6 +6,7 @@ import SwiftUI
 struct TimerDurationEditor: View {
     let duration: TimeInterval
     let theme: Theme
+    var font: Font = ToolPanelStyle.valueFont
 
     enum Unit: CaseIterable {
         case hours, minutes, seconds
@@ -40,7 +41,7 @@ struct TimerDurationEditor: View {
             colon
             segment(.seconds, String(format: "%02d", s), value: s)
         }
-        .font(ToolPanelStyle.valueFont)
+        .font(font)
         .foregroundStyle(theme.primaryText)
         .lineLimit(1)
         .fixedSize()
