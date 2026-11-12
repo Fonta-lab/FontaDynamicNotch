@@ -14,6 +14,8 @@ final class BrightnessService {
     private(set) var keyboardAvailable = false
     private(set) var screenLevel: Double = 0.5
     private(set) var keyboardLevel: Double = 0.5
+    /// macOS has turned the keyboard light off because the room is bright (see KeyboardBrightnessBackend).
+    private(set) var keyboardSuppressed = false
 
     @ObservationIgnored private let queue = DispatchQueue(label: "com.fonta.dynamicnotch.brightness", qos: .userInitiated)
     @ObservationIgnored private let screen: BrightnessBackend = DisplayBrightnessBackend()
@@ -22,17 +24,31 @@ final class BrightnessService {
     private init() {}
 
     func start() {
+        probe(retryKeyboard: true)
+    }
+
+    /// Checks which controls work. The keyboard backlight service can be slow to appear at login,
+    /// so if it isn't there yet it's checked once more a few seconds later.
+    private func probe(retryKeyboard: Bool) {
         let screen = screen, keyboard = keyboard
         queue.async {
             let s = screen.probe() ? screen.get() : nil
-            let k = keyboard.probe() ? keyboard.get() : nil
+            let kOK = keyboard.probe()
+            let k = kOK ? keyboard.get() : nil
+            let kSuppressed = kOK && keyboard.isSuppressed()
             DispatchQueue.main.async {
                 MainActor.assumeIsolated {
                     let svc = BrightnessService.shared
                     svc.screenAvailable = s != nil
-                    svc.keyboardAvailable = k != nil
+                    svc.keyboardAvailable = kOK
                     if let s { svc.screenLevel = Double(s) }
                     if let k { svc.keyboardLevel = Double(k) }
+                    svc.keyboardSuppressed = kSuppressed
+                    if !kOK && retryKeyboard {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
+                            MainActor.assumeIsolated { BrightnessService.shared.probe(retryKeyboard: false) }
+                        }
+                    }
                 }
             }
         }
@@ -45,9 +61,14 @@ final class BrightnessService {
     func refresh(_ kind: Kind) {
         let backend = backend(kind)
         queue.async {
-            guard let v = backend.get() else { return }
+            let v = backend.get()
+            let suppressed = backend.isSuppressed()
             DispatchQueue.main.async {
-                MainActor.assumeIsolated { BrightnessService.shared.store(kind, Double(v)) }
+                MainActor.assumeIsolated {
+                    let svc = BrightnessService.shared
+                    if let v { svc.store(kind, Double(v)) }
+                    if kind == .keyboard, svc.keyboardSuppressed != suppressed { svc.keyboardSuppressed = suppressed }
+                }
             }
         }
     }

@@ -9,6 +9,12 @@ protocol BrightnessBackend: AnyObject, Sendable {
     func probe() -> Bool
     func get() -> Float?
     func set(_ value: Float)
+    /// True when macOS is holding the control (keyboard light off in a bright room); setting does nothing then.
+    func isSuppressed() -> Bool
+}
+
+extension BrightnessBackend {
+    func isSuppressed() -> Bool { false }
 }
 
 /// Built-in display brightness via DisplayServices (private framework).
@@ -48,41 +54,89 @@ final class DisplayBrightnessBackend: BrightnessBackend, @unchecked Sendable {
 }
 
 /// Keyboard backlight via CoreBrightness's KeyboardBrightnessClient (private framework).
+/// Sturdier since v0.4 (a tester on macOS 15 reported it not working in v0.2):
+/// - uses the built-in keyboard's ID (`isKeyboardBuiltIn:`), not just the first one listed;
+/// - sets with `setBrightness:fadeSpeed:commit:forKeyboard:` (commits like the brightness keys),
+///   falling back to `setBrightness:forKeyboard:` if that's missing or refuses;
+/// - reads `brightnessForKeyboard:`, falling back to `backlightLevelForKeyboard:`;
+/// - the client and IDs are looked up when probed (and again on later probes if they weren't ready).
 final class KeyboardBrightnessBackend: BrightnessBackend, @unchecked Sendable {
-    private typealias GetIMP = @convention(c) (AnyObject, Selector, UInt64) -> Float
+    private typealias FloatIMP = @convention(c) (AnyObject, Selector, UInt64) -> Float
+    private typealias BoolIMP = @convention(c) (AnyObject, Selector, UInt64) -> Bool
     private typealias SetIMP = @convention(c) (AnyObject, Selector, Float, UInt64) -> Bool
+    private typealias SetCommitIMP = @convention(c) (AnyObject, Selector, Float, Int32, Bool, UInt64) -> Bool
+
+    private let getSel = NSSelectorFromString("brightnessForKeyboard:")
+    private let levelSel = NSSelectorFromString("backlightLevelForKeyboard:")
+    private let builtInSel = NSSelectorFromString("isKeyboardBuiltIn:")
+    private let setSel = NSSelectorFromString("setBrightness:forKeyboard:")
+    private let setCommitSel = NSSelectorFromString("setBrightness:fadeSpeed:commit:forKeyboard:")
+    private let idsSel = NSSelectorFromString("copyKeyboardBacklightIDs")
+    private let suppressedSel = NSSelectorFromString("isBacklightSuppressedOnKeyboard:")
+
+    private var cls: NSObject.Type?
     private var client: NSObject?
     private var keyboardID: UInt64?
-    private var getIMP: GetIMP?
-    private var setIMP: SetIMP?
-    private let getSel = NSSelectorFromString("brightnessForKeyboard:")
-    private let setSel = NSSelectorFromString("setBrightness:forKeyboard:")
 
     init() {
         _ = dlopen("/System/Library/PrivateFrameworks/CoreBrightness.framework/CoreBrightness", RTLD_NOW)
-        guard let cls = NSClassFromString("KeyboardBrightnessClient") as? NSObject.Type,
-              let gm = class_getInstanceMethod(cls, getSel),
-              let sm = class_getInstanceMethod(cls, setSel) else { return }
-        let c = cls.init()
-        let idsSel = NSSelectorFromString("copyKeyboardBacklightIDs")
-        guard c.responds(to: idsSel),
-              let ids = c.perform(idsSel)?.takeRetainedValue() as? [NSNumber], let first = ids.first else { return }
-        client = c
-        keyboardID = first.uint64Value
-        getIMP = unsafeBitCast(method_getImplementation(gm), to: GetIMP.self)
-        setIMP = unsafeBitCast(method_getImplementation(sm), to: SetIMP.self)
+        cls = NSClassFromString("KeyboardBrightnessClient") as? NSObject.Type
     }
 
-    func probe() -> Bool { get() != nil }
+    private func imp<T>(_ sel: Selector, _: T.Type) -> T? {
+        guard let cls, let m = class_getInstanceMethod(cls, sel) else { return nil }
+        return unsafeBitCast(method_getImplementation(m), to: T.self)
+    }
+
+    /// Finds the client and the built-in keyboard's ID (once they exist).
+    private func resolve() -> Bool {
+        if client != nil, keyboardID != nil { return true }
+        guard let cls else { return false }
+        let c = client ?? cls.init()
+        client = c
+        guard c.responds(to: idsSel),
+              let ids = c.perform(idsSel)?.takeRetainedValue() as? [NSNumber], !ids.isEmpty else { return false }
+        let all = ids.map(\.uint64Value)
+        if let isBuiltIn = imp(builtInSel, BoolIMP.self) {
+            keyboardID = all.first { isBuiltIn(c, builtInSel, $0) } ?? all[0]
+        } else {
+            keyboardID = all[0]
+        }
+        return true
+    }
+
+    private var canSet: Bool {
+        imp(setCommitSel, SetCommitIMP.self) != nil || imp(setSel, SetIMP.self) != nil
+    }
+
+    /// Available when the client, a keyboard and a way to set it exist. Reading the level may fail
+    /// on some versions without that making the control useless.
+    func probe() -> Bool { resolve() && canSet }
 
     func get() -> Float? {
-        guard let client, let keyboardID, let getIMP else { return nil }
-        let v = getIMP(client, getSel, keyboardID)
-        return v.isFinite && v >= 0 ? v : nil
+        guard resolve(), let client, let keyboardID else { return nil }
+        for sel in [getSel, levelSel] {
+            if let f = imp(sel, FloatIMP.self) {
+                let v = f(client, sel, keyboardID)
+                if v.isFinite && v >= 0 && v <= 1 { return v }
+            }
+        }
+        return nil
+    }
+
+    /// macOS turns the keyboard light off in a well-lit room ("Adjust keyboard brightness in low
+    /// light"); while it does, the level reads 0 and changes are ignored, even from the keys.
+    func isSuppressed() -> Bool {
+        guard resolve(), let client, let keyboardID, let f = imp(suppressedSel, BoolIMP.self) else { return false }
+        return f(client, suppressedSel, keyboardID)
     }
 
     func set(_ value: Float) {
-        guard let client, let keyboardID, let setIMP else { return }
-        _ = setIMP(client, setSel, max(0, min(1, value)), keyboardID)
+        guard resolve(), let client, let keyboardID else { return }
+        let v = max(0, min(1, value))
+        if let setCommit = imp(setCommitSel, SetCommitIMP.self), setCommit(client, setCommitSel, v, 0, true, keyboardID) {
+            return
+        }
+        if let set = imp(setSel, SetIMP.self) { _ = set(client, setSel, v, keyboardID) }
     }
 }

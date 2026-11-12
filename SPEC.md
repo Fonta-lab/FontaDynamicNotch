@@ -350,7 +350,7 @@ These may break with a macOS update. Each one is wrapped so that a failure only 
 | Feature | Mechanism | Confidence |
 |---|---|---|
 | Built-in display brightness | `dlopen` `/System/Library/PrivateFrameworks/DisplayServices.framework/DisplayServices`; `DisplayServicesGetBrightness(CGDirectDisplayID, *Float)` / `DisplayServicesSetBrightness(CGDirectDisplayID, Float)` on the display where `CGDisplayIsBuiltin` is true | [Likely] |
-| Keyboard backlight | `CoreBrightness.framework`, class `KeyboardBrightnessClient` (`copyKeyboardBacklightIDs`, `brightnessForKeyboard:`, `setBrightness:forKeyboard:`) via the Objective-C runtime | [Likely] |
+| Keyboard backlight | `CoreBrightness.framework`, class `KeyboardBrightnessClient` via the Objective-C runtime: the built-in keyboard's ID (`copyKeyboardBacklightIDs` + `isKeyboardBuiltIn:`), read `brightnessForKeyboard:` (fallback `backlightLevelForKeyboard:`), set `setBrightness:fadeSpeed:commit:forKeyboard:` (fallback `setBrightness:forKeyboard:`). When `isBacklightSuppressedOnKeyboard:` (macOS turned it off in a bright room) the slider is disabled with an explanation. Re-probed after 5 s if not ready at launch (v0.4, after a macOS 15 report) | [Likely] |
 
 Brightness sliders must also follow changes made with the keyboard keys: re-read the value when the slider appears, no polling.
 
