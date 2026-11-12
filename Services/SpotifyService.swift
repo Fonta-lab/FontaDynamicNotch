@@ -93,11 +93,27 @@ final class SpotifyService {
             return
         }
         // Apply what the notification already tells us, then fetch the rest (artwork URL, shuffle, repeat).
-        state = stateText == "playing" ? .playing : .paused
-        if let pos { position = pos; positionDate = Date() }
+        let newState: PlayerState = stateText == "playing" ? .playing : .paused
+        if let pos { syncPosition(pos, newState: newState, sameTrack: trackID == nil || trackID == track?.id) }
+        state = newState
         updatePauseExpiry()
         refresh()
     }
+
+    /// Takes Spotify's reported position. While the same track keeps playing, small differences are
+    /// ignored: the answer arrives a little late (the script takes time), so adopting it every 5 s
+    /// nudged the progress knob backwards each time. Real jumps (seek, track change, pause, play)
+    /// are always taken.
+    private func syncPosition(_ reported: Double, newState: PlayerState, sameTrack: Bool) {
+        let keepGliding = sameTrack && state == .playing && newState == .playing
+            && abs(reported - currentPosition()) < Self.positionTolerance
+        guard !keepGliding else { return }
+        position = reported
+        positionDate = Date()
+    }
+
+    /// Seconds of drift tolerated before the local progress clock is corrected.
+    private static let positionTolerance: Double = 1.0
 
     // MARK: Refresh
 
@@ -128,9 +144,8 @@ final class SpotifyService {
     }
 
     private func apply(_ s: SpotifySnapshot) {
+        syncPosition(s.position, newState: s.state, sameTrack: s.track?.id == track?.id)
         state = s.state
-        position = s.position
-        positionDate = Date()
         shuffling = s.shuffling
         repeating = s.repeating
         if track != s.track { track = s.track }

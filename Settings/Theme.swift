@@ -82,6 +82,8 @@ struct Theme: Codable, Equatable, Identifiable, Sendable {
     var knobSize: CGFloat = 10
     var knobShape: KnobShape = .circle
     var knobOnlyOnHover = true
+    /// Knobs shaded like a little bead, with a soft shadow (v0.4). Off = flat.
+    var knob3D = true
     var sliderFillStyle: SliderFillStyle = .solid
 
     // Surface (Liquid Glass). `solid` keeps every existing theme exactly as it was.
@@ -171,6 +173,7 @@ struct Theme: Codable, Equatable, Identifiable, Sendable {
         knobSize = v(.knobSize, d.knobSize)
         knobShape = v(.knobShape, d.knobShape)
         knobOnlyOnHover = v(.knobOnlyOnHover, d.knobOnlyOnHover)
+        knob3D = v(.knob3D, d.knob3D)
         sliderFillStyle = v(.sliderFillStyle, d.sliderFillStyle)
         surfaceStyle = v(.surfaceStyle, d.surfaceStyle)
         glassVariant = v(.glassVariant, d.glassVariant)

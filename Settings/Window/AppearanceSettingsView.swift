@@ -123,6 +123,7 @@ struct ThemeEditorSections: View {
                 Text("None").tag(KnobShape.none)
             }
             Toggle("Show knob only on hover", isOn: $theme.knobOnlyOnHover)
+            Toggle("3D knobs (shading and a soft shadow)", isOn: $theme.knob3D)
             Picker("Fill", selection: $theme.sliderFillStyle) {
                 Text("Solid colour").tag(SliderFillStyle.solid)
                 Text("Artwork colour").tag(SliderFillStyle.artwork)

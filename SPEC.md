@@ -174,7 +174,7 @@ Spotify's AppleScript interface, **not** MediaRemote (which is restricted since 
 
 - **Never launch Spotify by accident:** before any script, check `NSRunningApplication.runningApplications(withBundleIdentifier: "com.spotify.client")`. `tell application "Spotify"` would start it otherwise [Certain].
 - **Change events:** observe `DistributedNotificationCenter` notification `com.spotify.client.PlaybackStateChanged` [Likely]. Its `userInfo` carries state, name, artist, track ID, duration and position. On each event, run one script to refresh the full state.
-- **Progress bar:** interpolate locally from `(position, timestamp, isPlaying)`. Resync from Spotify on each event, and every 5 s **only while the notch is open and playing**. No timers when closed.
+- **Progress bar:** interpolate locally from `(position, timestamp, isPlaying)`. Resync from Spotify on each event, and every 5 s **only while the notch is open and playing**. No timers when closed. While the same track keeps playing, a reported position within 1 s of the local clock is ignored (the script's answer arrives late, and adopting it nudged the knob backwards every 5 s); seeks, track changes, pause/play are always taken.
 - Run all AppleScript on **one dedicated serial background queue** (NSAppleScript is not thread-safe). Never block the main thread.
 - Properties to read: `player state`, `player position`, `shuffling`, `repeating`, and from `current track`: `id`, `name`, `artist`, `album`, `duration` (ms), `artwork url`.
 - Commands: `playpause`, `next track`, `previous track`, `set player position to x`, `set shuffling to bool`, `set repeating to bool`.
@@ -306,7 +306,7 @@ A macOS-style window (SwiftUI, sidebar navigation like System Settings). Changes
    - **Shadow:** on/off, color, opacity, radius, y-offset.
    - **Surface:** Solid / Liquid Glass, glass variant, transparency (Clear ↔ Tinted), tint + intensity, dimming, glass when closed.
    - **Icon size** (top bar and controls separately).
-   - **Sliders:** height, knob size, knob shape (circle / capsule / none), knob visible only on hover, fill style (solid / artwork color).
+   - **Sliders:** height, knob size, knob shape (circle / capsule / none), knob visible only on hover, **3D knobs** (shading + soft shadow, default on, v0.4), fill style (solid / artwork color).
 3. **Layout & Modules:** drag-to-reorder the left and right top-bar groups; show/hide each module (Home/Files, Screen brightness, Keyboard brightness, Timer, Stopwatch, Counter); open width/height; closed wing width.
 4. **Animations:** §9 springs, each with preview and reset.
 5. **Music:** Spotify permission status and button; bars count, speed and color source; marquee on/off.

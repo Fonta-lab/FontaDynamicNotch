@@ -34,8 +34,7 @@ struct NotchSlider: View {
                 Capsule().fill(theme.sliderTrack).frame(height: theme.sliderHeight)
                 Capsule().fill(fillColor.opacity(enabled ? 1 : 0.35))
                     .frame(width: max(theme.sliderHeight, w * v), height: theme.sliderHeight)
-                Capsule()
-                    .fill(theme.sliderKnob)
+                SliderKnob(color: theme.sliderKnob, threeD: theme.knob3D)
                     .frame(width: knobW, height: theme.knobSize)
                     // Grows a little while the mouse is over the slider or dragging it (not with Reduce Motion).
                     .scaleEffect(knobGrown ? Self.hoverKnobScale : 1)
@@ -79,5 +78,38 @@ struct NotchSlider: View {
     private var fillColor: Color {
         if theme.sliderFillStyle == .artwork, let c = SpotifyService.shared.artworkColor { return c.lightenedForBars.color }
         return theme.sliderFill
+    }
+}
+
+/// The slider knob in the theme's knob colour. 3D: lit from above (a soft highlight on top, a
+/// little shade at the bottom, a fine bright rim on the upper edge) with a small drop shadow, so
+/// it reads as a bead sitting on the track. Flat: just the colour.
+private struct SliderKnob: View {
+    let color: Color
+    let threeD: Bool
+
+    var body: some View {
+        if threeD {
+            Capsule()
+                .fill(color)
+                .overlay(
+                    Capsule().fill(LinearGradient(
+                        stops: [.init(color: .white.opacity(0.45), location: 0),
+                                .init(color: .white.opacity(0), location: 0.5),
+                                .init(color: .black.opacity(0.22), location: 1)],
+                        startPoint: .top, endPoint: .bottom))
+                )
+                .overlay(
+                    Capsule().strokeBorder(LinearGradient(colors: [.white.opacity(0.7), .white.opacity(0)],
+                                                          startPoint: .top, endPoint: .center),
+                                           lineWidth: 0.5)
+                )
+                .overlay(Capsule().strokeBorder(.black.opacity(0.12), lineWidth: 0.5))
+                .compositingGroup()
+                .shadow(color: .black.opacity(0.35), radius: 1.5, y: 1)
+                .shadow(color: .black.opacity(0.15), radius: 4, y: 2)
+        } else {
+            Capsule().fill(color)
+        }
     }
 }
