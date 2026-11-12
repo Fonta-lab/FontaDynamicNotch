@@ -7,7 +7,7 @@ struct FilesTabView: View {
     private var shelf: ShelfStore { .shared }
 
     var body: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: Spacing.m) {
             ShelfView(theme: theme)
             AirDropZone(theme: theme)
                 .frame(width: 92)
@@ -25,38 +25,38 @@ struct ShelfView: View {
 
     var body: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .fill(Color.white.opacity(targeted ? 0.14 : 0.07))
+            RoundedRectangle(cornerRadius: theme.panelRadius, style: .continuous)
+                .fill(theme.primaryText.opacity(targeted ? Highlight.selected : Highlight.panel))
             if shelf.items.isEmpty {
-                VStack(spacing: 6) {
+                VStack(spacing: Spacing.s) {
                     Image(systemName: "tray.and.arrow.down").font(.title)
                     Text("Drop files here").font(.callout.weight(.medium))
                 }
                 .foregroundStyle(theme.secondaryText)
             } else {
-                VStack(alignment: .trailing, spacing: 2) {
+                VStack(alignment: .trailing, spacing: Spacing.xxs) {
                     Button("Clear all") { shelf.clear() }
                         .buttonStyle(.plain)
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(theme.secondaryText)
-                        .padding(.trailing, 10)
-                        .padding(.top, 6)
+                        .padding(.trailing, Spacing.m)
+                        .padding(.top, Spacing.s)
                     ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 6) {
+                        HStack(spacing: Spacing.s) {
                             ForEach(shelf.items) { item in
                                 ShelfItemView(item: item, selected: shelf.selection.contains(item.id), theme: theme)
                             }
                         }
-                        .padding(.horizontal, 8)
+                        .padding(.horizontal, Spacing.s)
                     }
                     .frame(maxHeight: .infinity)   // files centred in the space under "Clear all"
-                    Spacer(minLength: 14)
+                    Spacer(minLength: Spacing.m)
                 }
             }
         }
         .overlay(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .strokeBorder(Color.white.opacity(targeted ? 0.5 : 0), style: StrokeStyle(lineWidth: 1.5, dash: [5, 4]))
+            RoundedRectangle(cornerRadius: theme.panelRadius, style: .continuous)
+                .strokeBorder(theme.primaryText.opacity(targeted ? 0.5 : 0), style: StrokeStyle(lineWidth: 1.5, dash: [5, 4]))
         )
         .dropDestination(for: URL.self) { urls, _ in
             shelf.add(urls)
@@ -73,7 +73,7 @@ struct ShelfItemView: View {
     @State private var hovering = false
 
     var body: some View {
-        VStack(spacing: 3) {
+        VStack(spacing: Spacing.xs) {
             Group {
                 if let t = item.thumbnail {
                     Image(nsImage: t).resizable().aspectRatio(contentMode: .fit)
@@ -89,9 +89,9 @@ struct ShelfItemView: View {
                 .multilineTextAlignment(.center)
                 .frame(width: 60, height: 22, alignment: .top)
         }
-        .padding(4)
-        .background(RoundedRectangle(cornerRadius: 8, style: .continuous)
-            .fill(Color.white.opacity(selected ? 0.22 : hovering ? 0.08 : 0)))
+        .padding(Spacing.xs)
+        .background(RoundedRectangle(cornerRadius: theme.buttonRadius, style: .continuous)
+            .fill(theme.primaryText.opacity(selected ? Highlight.selected : hovering ? Highlight.hover : 0)))
         .overlay(alignment: .topTrailing) {
             if hovering {
                 Button { ShelfStore.shared.remove(item.id) } label: {
@@ -175,20 +175,22 @@ struct DropZoneBox: View {
     let theme: Theme
 
     var body: some View {
-        VStack(spacing: 6) {
+        VStack(spacing: Spacing.s) {
+            // Fixed icon height, so the AirDrop and Trash labels line up.
             Image(systemName: symbol).font(.title.weight(.medium))
+                .frame(height: 28)
             Text(message ?? title)
                 .font((message == nil ? Font.callout : .caption).weight(.medium))
                 .multilineTextAlignment(.center)
                 .lineLimit(2)
         }
         .foregroundStyle(theme.primaryText.opacity(targeted ? 1 : 0.75))
-        .padding(6)
+        .padding(Spacing.s)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(RoundedRectangle(cornerRadius: 14, style: .continuous)
-            .fill(Color.white.opacity(targeted ? 0.18 : 0.07)))
-        .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous)
-            .strokeBorder(Color.white.opacity(targeted ? 0.5 : 0), style: StrokeStyle(lineWidth: 1.5, dash: [5, 4])))
+        .background(RoundedRectangle(cornerRadius: theme.panelRadius, style: .continuous)
+            .fill(theme.primaryText.opacity(targeted ? Highlight.selected : Highlight.panel)))
+        .overlay(RoundedRectangle(cornerRadius: theme.panelRadius, style: .continuous)
+            .strokeBorder(theme.primaryText.opacity(targeted ? 0.5 : 0), style: StrokeStyle(lineWidth: 1.5, dash: [5, 4])))
         .scaleEffect(targeted ? 1.04 : 1)
         .modifier(ShakeEffect(shakes: CGFloat(shake)))
         .contentShape(Rectangle())

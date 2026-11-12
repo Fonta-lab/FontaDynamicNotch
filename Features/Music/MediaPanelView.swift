@@ -13,7 +13,7 @@ struct MediaPanelView: View {
     private let side: CGFloat = 112
 
     var body: some View {
-        HStack(alignment: .top, spacing: 14) {
+        HStack(alignment: .top, spacing: Spacing.m) {
             CoverImage(image: spotify.track != nil && spotify.isRunning ? spotify.artwork : nil, radius: theme.coverRadiusOpen)
                 .frame(width: side, height: side)
 
@@ -97,16 +97,16 @@ struct MediaPanelView: View {
                 .frame(maxWidth: .infinity, minHeight: 22)
                 .contentShape(Rectangle())
         }
-        .buttonStyle(NotchButtonStyle(radius: theme.buttonRadius))
+        .buttonStyle(NotchButtonStyle(radius: theme.buttonRadius, tint: theme.primaryText))
     }
 
     private func message(_ text: String, button: String?, action: @escaping () -> Void) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: Spacing.s) {
             Spacer(minLength: 0)
             Text(text).font(.body.weight(.semibold)).foregroundStyle(theme.secondaryText)
             if let button {
                 Button(button, action: action)
-                    .buttonStyle(NotchButtonStyle(radius: theme.buttonRadius, filled: true))
+                    .buttonStyle(NotchButtonStyle(radius: theme.buttonRadius, filled: true, tint: theme.primaryText))
                     .font(.callout.weight(.semibold))
                     .foregroundStyle(theme.primaryText)
             }
@@ -122,9 +122,11 @@ struct NotchButtonStyle: ButtonStyle {
     var filled = false
     /// Extra inner padding for filled buttons. Off when the label sets its own size (tool panels).
     var padded = true
+    /// Colour of the highlight: the theme's primary text colour, so it suits the theme.
+    var tint: Color = .white
 
     func makeBody(configuration: Configuration) -> some View {
-        NotchButtonBody(configuration: configuration, radius: radius, filled: filled, padded: padded)
+        NotchButtonBody(configuration: configuration, radius: radius, filled: filled, padded: padded, tint: tint)
     }
 }
 
@@ -134,20 +136,27 @@ private struct NotchButtonBody: View {
     let radius: CGFloat
     let filled: Bool
     let padded: Bool
+    let tint: Color
     @State private var hovering = false
 
     var body: some View {
         configuration.label
-            .padding(.horizontal, filled && padded ? 12 : 0)
-            .padding(.vertical, filled && padded ? 5 : 0)
+            .padding(.horizontal, filled && padded ? Spacing.m : 0)
+            .padding(.vertical, filled && padded ? Spacing.xs : 0)
             .background(
                 RoundedRectangle(cornerRadius: radius, style: .continuous)
-                    .fill(Color.white.opacity(configuration.isPressed ? 0.22 : hovering ? (filled ? 0.18 : 0.12) : (filled ? 0.1 : 0)))
+                    .fill(tint.opacity(fill))
             )
             .scaleEffect(configuration.isPressed ? 0.94 : 1)
             .contentShape(Rectangle())
             .onHover { hovering = $0 }
             .animation(.easeOut(duration: 0.12), value: hovering)
             .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
+    }
+
+    private var fill: Double {
+        if configuration.isPressed { return Highlight.pressed }
+        if hovering { return filled ? Highlight.selected : Highlight.hover }
+        return filled ? Highlight.filled : 0
     }
 }

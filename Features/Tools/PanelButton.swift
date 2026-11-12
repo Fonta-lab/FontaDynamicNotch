@@ -11,7 +11,7 @@ struct PanelButton: View {
 
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 4) {
+            HStack(spacing: Spacing.xs) {
                 if let symbol { Image(systemName: symbol).font(.subheadline.weight(.semibold)) }
                 if let title { Text(title).font(.body.weight(.bold).monospacedDigit()) }
             }
@@ -19,7 +19,7 @@ struct PanelButton: View {
             .frame(maxWidth: .infinity, minHeight: 26, maxHeight: 26)
             .contentShape(Rectangle())
         }
-        .buttonStyle(NotchButtonStyle(radius: theme.buttonRadius, filled: true, padded: false))
+        .buttonStyle(NotchButtonStyle(radius: theme.buttonRadius, filled: true, padded: false, tint: theme.primaryText))
         .disabled(!enabled)
         .help(help)
     }

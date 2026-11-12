@@ -7,8 +7,8 @@ struct CounterPanelView: View {
 
     var body: some View {
         let multiple = store.counters.count > 1
-        VStack(spacing: 4) {
-            HStack(spacing: 4) {
+        VStack(spacing: Spacing.xs) {
+            HStack(spacing: Spacing.xs) {
                 arrow("chevron.left", enabled: multiple) { store.step(-1) }
                 Text(store.selected?.name ?? "Counter")
                     .font(.subheadline.weight(.medium))
@@ -27,7 +27,7 @@ struct CounterPanelView: View {
                 .contentTransition(.numericText())
                 .animation(.snappy(duration: 0.2), value: store.selected?.value)
             Spacer(minLength: 0)
-            HStack(spacing: 6) {
+            HStack(spacing: Spacing.s) {
                 PanelButton(theme: theme, title: "−1") { store.add(-1) }
                 PanelButton(theme: theme, title: "+1") { store.add(1) }
                 PanelButton(theme: theme, symbol: "arrow.counterclockwise", help: "Reset to 0") { store.reset() }
@@ -42,7 +42,7 @@ struct CounterPanelView: View {
                 .foregroundStyle(theme.primaryText.opacity(enabled ? 0.8 : 0.25))
                 .frame(width: 18, height: 18)
         }
-        .buttonStyle(NotchButtonStyle(radius: 9))
+        .buttonStyle(NotchButtonStyle(radius: theme.buttonRadius(height: 18), tint: theme.primaryText))
         .disabled(!enabled)
     }
 }

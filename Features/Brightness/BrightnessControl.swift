@@ -13,11 +13,11 @@ struct BrightnessControl: View {
 
     var body: some View {
         let expanded = hovering || dragging
-        HStack(spacing: 6) {
+        HStack(spacing: Spacing.xs) {
             Image(systemName: symbol)
                 .font(.system(size: theme.topBarIconSize, weight: .semibold))
                 .foregroundStyle(theme.iconColor.opacity(0.9))
-                .frame(width: 16)
+                .frame(width: 20)
             if expanded {
                 NotchSlider(value: service.level(kind), theme: theme,
                             onChange: { service.set(kind, $0) },
@@ -27,9 +27,10 @@ struct BrightnessControl: View {
                     .transition(.opacity.combined(with: .scale(scale: 0.6, anchor: .leading)))
             }
         }
-        .padding(.horizontal, 6)
-        .frame(height: 22)
-        .background(Capsule().fill(Color.white.opacity(expanded ? 0.12 : 0)))
+        .padding(.leading, Spacing.xs)
+        .padding(.trailing, expanded ? Spacing.s : Spacing.xs)
+        .frame(height: TopBarMetrics.itemHeight)
+        .background(Capsule().fill(theme.primaryText.opacity(expanded ? Highlight.hover : 0)))
         .contentShape(Capsule())
         .onHover { inside in
             hovering = inside

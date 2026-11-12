@@ -9,13 +9,13 @@ struct StopwatchPanelView: View {
 
     var body: some View {
         let laps = store.lapDurations
-        VStack(spacing: 2) {
+        VStack(spacing: Spacing.xs) {
             Text("Stopwatch")
                 .font(.subheadline.weight(.medium))
                 .foregroundStyle(theme.secondaryText)
             Spacer(minLength: 0)
             ZStack {
-                VStack(spacing: 2) {
+                VStack(spacing: Spacing.xxs) {
                     TimelineView(.animation(minimumInterval: 1.0 / 30, paused: !store.isRunning)) { ctx in
                         Text(StopwatchFormat.precise(store.elapsed(at: ctx.date)))
                             .font(ToolPanelStyle.valueFont)
@@ -42,7 +42,7 @@ struct StopwatchPanelView: View {
 
     private func lapList(_ laps: [TimeInterval]) -> some View {
         ScrollView(.vertical, showsIndicators: false) {
-            VStack(spacing: 1) {
+            VStack(spacing: 0) {
                 ForEach(Array(laps.enumerated().reversed()), id: \.offset) { i, d in
                     HStack {
                         Text("Lap \(i + 1)")
@@ -53,13 +53,13 @@ struct StopwatchPanelView: View {
                     .foregroundStyle(theme.primaryText)
                 }
             }
-            .padding(.horizontal, 6)
+            .padding(.horizontal, Spacing.s)
         }
-        .background(RoundedRectangle(cornerRadius: 8).fill(Color.black.opacity(0.35)))
+        .background(RoundedRectangle(cornerRadius: theme.buttonRadius, style: .continuous).fill(Color.black.opacity(0.35)))
     }
 
     private var controls: some View {
-        HStack(spacing: 6) {
+        HStack(spacing: Spacing.s) {
             PanelButton(theme: theme, symbol: store.isRunning ? "pause.fill" : "play.fill",
                         help: store.isRunning ? "Pause" : (store.isIdle ? "Start" : "Resume")) { store.toggle() }
             PanelButton(theme: theme, symbol: "flag.fill", enabled: store.isRunning, help: "Lap") { store.lap() }

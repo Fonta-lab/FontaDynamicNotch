@@ -13,8 +13,8 @@ struct TabSwitchView: View {
             item(.home, "house.fill")
             item(.files, "folder.fill")
         }
-        .padding(2)
-        .background(Capsule().fill(Color.white.opacity(0.08)))
+        .padding(Spacing.xxs)
+        .background(Capsule().fill(theme.primaryText.opacity(Highlight.panel)))
     }
 
     private func item(_ tab: NotchTab, _ symbol: String) -> some View {
@@ -22,8 +22,8 @@ struct TabSwitchView: View {
             Image(systemName: symbol)
                 .font(.system(size: theme.topBarIconSize - 1, weight: .semibold))
                 .foregroundStyle(theme.iconColor.opacity(selected == tab ? 1 : 0.5))
-                .frame(width: 22, height: 20)
-                .background(Capsule().fill(Color.white.opacity(selected == tab ? 0.18 : 0)))
+                .frame(width: 24, height: TopBarMetrics.itemHeight - Spacing.xxs * 2)
+                .background(Capsule().fill(theme.primaryText.opacity(selected == tab ? Highlight.selected : 0)))
                 .contentShape(Capsule())
         }
         .buttonStyle(.plain)

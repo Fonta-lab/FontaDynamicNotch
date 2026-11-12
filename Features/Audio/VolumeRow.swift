@@ -8,14 +8,14 @@ struct VolumeRow: View {
 
     var body: some View {
         let s = audio.state
-        HStack(spacing: 8) {
+        HStack(spacing: Spacing.s) {
             Button { audio.toggleMute() } label: {
                 Image(systemName: speakerSymbol)
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(theme.iconColor.opacity(audio.isEffectivelyMuted ? 0.5 : 0.9))
                     .frame(width: 20, height: 18)
             }
-            .buttonStyle(NotchButtonStyle(radius: 5))
+            .buttonStyle(NotchButtonStyle(radius: theme.buttonRadius(height: 18), tint: theme.primaryText))
 
             NotchSlider(value: Double(s.isMuted ? 0 : s.volume), theme: theme, enabled: s.hasVolumeControl,
                         onChange: { audio.setVolume($0) }, onEnd: { audio.setVolume($0) })
@@ -27,7 +27,7 @@ struct VolumeRow: View {
                     .foregroundStyle(theme.iconColor.opacity(showDevices ? 1 : 0.8))
                     .frame(width: 22, height: 18)
             }
-            .buttonStyle(NotchButtonStyle(radius: 5))
+            .buttonStyle(NotchButtonStyle(radius: theme.buttonRadius(height: 18), tint: theme.primaryText))
             .help(audio.currentDevice?.name ?? "Output")
         }
     }
@@ -47,37 +47,39 @@ struct OutputDeviceList: View {
 
     var body: some View {
         ScrollView(.vertical, showsIndicators: false) {
-            VStack(spacing: 1) {
+            VStack(spacing: 0) {
                 ForEach(audio.state.devices) { device in
                     Button {
                         audio.selectDevice(device.id)
                         onPick()
                     } label: {
-                        HStack(spacing: 8) {
+                        HStack(spacing: Spacing.s) {
                             Image(systemName: device.symbol).frame(width: 16)
                             Text(device.name).lineLimit(1).truncationMode(.tail)
-                            Spacer(minLength: 4)
+                            Spacer(minLength: Spacing.xs)
                             if device.id == audio.state.defaultDeviceID {
                                 Image(systemName: "checkmark").font(.caption.weight(.bold))
                             }
                         }
                         .font(.subheadline.weight(.medium))
                         .foregroundStyle(theme.primaryText)
-                        .padding(.horizontal, 8)
-                        .frame(height: 22)
+                        .padding(.horizontal, Spacing.s)
+                        .frame(height: 24)
                         .frame(maxWidth: .infinity)
                     }
-                    .buttonStyle(NotchButtonStyle(radius: 6))
+                    .buttonStyle(NotchButtonStyle(radius: theme.buttonRadius(height: 24), tint: theme.primaryText))
                 }
             }
-            .padding(4)
+            .padding(Spacing.xs)
         }
-        .frame(maxHeight: 84)
+        .frame(maxHeight: 88)
         .fixedSize(horizontal: false, vertical: true)
         .background(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
+            // Rows sit Spacing.xs in, so the list's corner is the rows' corner plus that gap.
+            RoundedRectangle(cornerRadius: theme.buttonRadius(height: 24) + Spacing.xs, style: .continuous)
                 .fill(Color.black.opacity(0.88))
-                .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).stroke(Color.white.opacity(0.12), lineWidth: 1))
+                .overlay(RoundedRectangle(cornerRadius: theme.buttonRadius(height: 24) + Spacing.xs, style: .continuous)
+                    .stroke(theme.primaryText.opacity(Highlight.hover), lineWidth: 1))
         )
         .shadow(color: .black.opacity(0.4), radius: 8, y: 3)
     }

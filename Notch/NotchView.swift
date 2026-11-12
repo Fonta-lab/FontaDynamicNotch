@@ -79,7 +79,7 @@ struct OpenContentView: View {
                         .transition(.opacity)
                 } else {
                     // Music block centred vertically against the (full-height) tool panel.
-                    HStack(alignment: .center, spacing: 14) {
+                    HStack(alignment: .center, spacing: Spacing.m) {
                         MediaPanelView(theme: theme, settings: settings)
                         // Hidden when every tool is turned off in Settings › Layout & Modules.
                         if !settings.visibleTools.isEmpty {
@@ -91,9 +91,9 @@ struct OpenContentView: View {
                     .transition(.opacity)
                 }
             }
-            .padding(.horizontal, 18)
-            .padding(.top, 8)
-            .padding(.bottom, 16)
+            .padding(.horizontal, Spacing.l)   // same leading edge as the top bar
+            .padding(.top, Spacing.s)
+            .padding(.bottom, Spacing.l)
         }
     }
 }

@@ -7,7 +7,7 @@ struct TimerPanelView: View {
 
     var body: some View {
         let selected = store.selected
-        VStack(spacing: 4) {
+        VStack(spacing: Spacing.xs) {
             chips(selectedID: selected?.id)
             Spacer(minLength: 0)
             Text(selected?.name ?? "")
@@ -31,7 +31,7 @@ struct TimerPanelView: View {
     }
 
     private func chips(selectedID: UUID?) -> some View {
-        HStack(spacing: 3) {
+        HStack(spacing: Spacing.xs) {
             ForEach(store.presets) { p in
                 let isSelected = p.id == selectedID
                 Button { store.select(p.id) } label: {
@@ -40,9 +40,9 @@ struct TimerPanelView: View {
                         .lineLimit(1)
                         .truncationMode(.tail)
                         .foregroundStyle(theme.primaryText.opacity(isSelected ? 1 : 0.65))
-                        .padding(.horizontal, 2)
+                        .padding(.horizontal, Spacing.xxs)
                         .frame(maxWidth: .infinity, minHeight: 18)
-                        .background(Capsule().fill(Color.white.opacity(isSelected ? 0.2 : 0.06)))
+                        .background(Capsule().fill(theme.primaryText.opacity(isSelected ? Highlight.selected : Highlight.panel)))
                         .overlay(alignment: .topTrailing) {
                             if p.isRunning || p.isRinging {
                                 Circle().fill(p.isRinging ? Color.red : theme.accent)
@@ -62,7 +62,7 @@ struct TimerPanelView: View {
         case .paused: ("Resume", "play.fill")
         default: ("Start", "play.fill")
         }
-        return HStack(spacing: 6) {
+        return HStack(spacing: Spacing.s) {
             PanelButton(theme: theme, symbol: symbol, enabled: !p.isRinging, help: help) { store.toggle(p.id) }
             PanelButton(theme: theme, symbol: "arrow.counterclockwise", enabled: p.run != .idle, help: "Reset") { store.reset(p.id) }
         }
@@ -84,7 +84,7 @@ struct AlarmView: View {
     private var timers: TimerStore { .shared }
 
     var body: some View {
-        HStack(spacing: 18) {
+        HStack(spacing: Spacing.l) {
             Image(systemName: "bell.and.waves.left.and.right.fill")
                 .font(.system(size: 34, weight: .semibold))
                 .foregroundStyle(theme.primaryText)
@@ -92,12 +92,12 @@ struct AlarmView: View {
                 .animation(.easeInOut(duration: 0.5).repeatForever(autoreverses: true), value: pulse)
                 .onAppear { pulse = true }
 
-            VStack(alignment: .leading, spacing: 3) {
+            VStack(alignment: .leading, spacing: Spacing.xs) {
                 Text(timers.ringing.count > 1 ? "Timers ended" : "Timer ended")
                     .font(.subheadline.weight(.medium))
                     .foregroundStyle(theme.secondaryText)
                 ScrollView(.vertical, showsIndicators: false) {
-                    VStack(alignment: .leading, spacing: 2) {
+                    VStack(alignment: .leading, spacing: Spacing.xxs) {
                         ForEach(timers.ringing) { t in
                             Text(t.name)
                                 .font(.title2.weight(.semibold))
@@ -122,6 +122,6 @@ struct AlarmView: View {
             .buttonStyle(.plain)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding(.horizontal, 8)
+        .padding(.horizontal, Spacing.s)
     }
 }

@@ -13,7 +13,7 @@ struct ProgressBar: View {
         TimelineView(.animation(minimumInterval: 1.0 / 30, paused: !spotify.isPlaying || dragFraction != nil)) { ctx in
             let pos = dragFraction.map { $0 * duration } ?? spotify.currentPosition(at: ctx.date)
             let fraction = duration > 0 ? min(1, max(0, pos / duration)) : 0
-            VStack(spacing: 3) {
+            VStack(spacing: Spacing.xs) {
                 NotchSlider(value: fraction, theme: theme, enabled: duration > 0,
                             onChange: { dragFraction = $0 },
                             onEnd: { f in
