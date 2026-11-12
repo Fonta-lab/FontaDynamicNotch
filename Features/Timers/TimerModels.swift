@@ -84,6 +84,18 @@ enum TimeFormat {
                          : String(format: "%d:%02d", t / 60, t % 60)
     }
 
+    /// A length in words, as the default chip names are written: "1 min", "1 hour", "1 h 30 min",
+    /// "12 min 30 s".
+    static func label(_ seconds: TimeInterval) -> String {
+        let t = Int(seconds.rounded())
+        let h = t / 3600, m = t / 60 % 60, s = t % 60
+        var parts: [String] = []
+        if h > 0 { parts.append(m == 0 && s == 0 ? (h == 1 ? "1 hour" : "\(h) hours") : "\(h) h") }
+        if m > 0 { parts.append("\(m) min") }
+        if s > 0 { parts.append("\(s) s") }
+        return parts.isEmpty ? "0 s" : parts.joined(separator: " ")
+    }
+
     /// Countdowns round up, so "0:01" shows until the very end.
     static func countdown(_ remaining: TimeInterval) -> String { clock(remaining.rounded(.up)) }
 }

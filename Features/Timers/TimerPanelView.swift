@@ -1,9 +1,11 @@
 import SwiftUI
 
 /// Timer tool (SPEC §7.1): 5 chips, the selected timer's name and time, Start/Pause and Reset.
+/// While a timer is idle its time can be set in place (TimerDurationEditor).
 struct TimerPanelView: View {
     let theme: Theme
     private var store: TimerStore { .shared }
+    @State private var editingTime = false
 
     var body: some View {
         let selected = store.selected
@@ -15,7 +17,12 @@ struct TimerPanelView: View {
                 .foregroundStyle(theme.secondaryText)
                 .lineLimit(1)
                 .truncationMode(.tail)
-            if let selected {
+                .opacity(editingTime && selected?.run == .idle ? 0 : 1)   // the ▲ arrows sit here
+                .animation(Motion.feedback, value: editingTime)
+            if let selected, selected.run == .idle {
+                // Not started: the length can be changed right here (▲▼ on hover, or scroll).
+                TimerDurationEditor(preset: selected, theme: theme, hovering: $editingTime)
+            } else if let selected {
                 // Refreshes only while this panel is visible and the timer runs.
                 TimelineView(.animation(minimumInterval: 0.25, paused: !selected.isRunning)) { ctx in
                     Text(TimeFormat.countdown(store.remaining(selected, at: ctx.date)))

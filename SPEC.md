@@ -220,6 +220,7 @@ CoreAudio, public API [Certain].
 
 ### 7.1 Timers
 - **5 preset slots**, each `{ id, name, duration }`. Names and durations are edited in Settings › Timers.
+- **Set the length from the notch** (added 2026-11-12 at the user's request): while the selected timer is idle, hovering its time shows ▲▼ above and below the hours, minutes and seconds (the name above hides while they show); clicking them or scrolling over a number changes it (1 h / 1 min / 1 s steps, 1 s – 23:59:59). The new length is **saved into the chip** (same as Settings). A chip name that just describes its length ("5 min") follows the new one ("12 min 30 s"); custom names stay.
 - Panel layout: a row of 5 chips (short names, truncated) above the large time display. Click a chip to select it. Running timers show a dot on their chip. The selected timer's full name appears above the time.
 - Controls: **Start/Pause** (one toggle button) and **Reset** (separate button), per the user's choice of two buttons.
 - **Several timers can run at the same time.**

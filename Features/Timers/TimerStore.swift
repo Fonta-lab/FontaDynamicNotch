@@ -110,6 +110,17 @@ final class TimerStore {
         }
     }
 
+    /// From the notch's time editor: the new length is saved into the chip (only while idle).
+    /// A name that just described the old length ("5 min") follows the new one; custom names stay.
+    func setDuration(_ id: UUID, _ duration: TimeInterval) {
+        update(id) { p in
+            guard p.run == .idle else { return }
+            let new = min(TimerDurationEditor.maxDuration, max(1, duration.rounded()))
+            if p.name == TimeFormat.label(p.duration) { p.name = TimeFormat.label(new) }
+            p.duration = new
+        }
+    }
+
     /// Called by the alarm's Stop button: every ringing timer goes back to idle.
     func clearRinging() {
         var changed = false
