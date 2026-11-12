@@ -40,9 +40,10 @@ struct CounterPanelView: View {
             Image(systemName: symbol)
                 .font(.caption.weight(.bold))
                 .foregroundStyle(theme.primaryText.opacity(enabled ? 0.8 : 0.25))
-                .frame(width: 18, height: 18)
+                .frame(width: 24, height: 24)
         }
-        .buttonStyle(NotchButtonStyle(radius: theme.buttonRadius(height: 18), tint: theme.primaryText))
+        .buttonStyle(NotchButtonStyle(radius: theme.buttonRadius(height: 24), tint: theme.primaryText))
+        .padding(.vertical, -3)   // 24 pt click area, the name row stays 18 pt
         .disabled(!enabled)
     }
 }

@@ -98,6 +98,8 @@ struct ShelfItemView: View {
                     Image(systemName: "xmark.circle.fill")
                         .font(.body)
                         .foregroundStyle(.white, .black.opacity(0.6))
+                        .frame(width: 20, height: 20)
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .help("Remove from shelf")

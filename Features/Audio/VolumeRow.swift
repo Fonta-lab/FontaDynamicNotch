@@ -13,9 +13,10 @@ struct VolumeRow: View {
                 Image(systemName: speakerSymbol)
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(theme.iconColor.opacity(audio.isEffectivelyMuted ? 0.5 : 0.9))
-                    .frame(width: 20, height: 18)
+                    .frame(width: 24, height: 24)
             }
-            .buttonStyle(NotchButtonStyle(radius: theme.buttonRadius(height: 18), tint: theme.primaryText))
+            .buttonStyle(NotchButtonStyle(radius: theme.buttonRadius(height: 24), tint: theme.primaryText))
+            .padding(.vertical, -3)   // 24 pt click area in the 18 pt row
 
             NotchSlider(value: Double(s.isMuted ? 0 : s.volume), theme: theme, enabled: s.hasVolumeControl,
                         onChange: { audio.setVolume($0) }, onEnd: { audio.setVolume($0) })
@@ -25,9 +26,10 @@ struct VolumeRow: View {
                 Image(systemName: audio.currentDevice?.symbol ?? "hifispeaker")
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(theme.iconColor.opacity(showDevices ? 1 : 0.8))
-                    .frame(width: 22, height: 18)
+                    .frame(width: 24, height: 24)
             }
-            .buttonStyle(NotchButtonStyle(radius: theme.buttonRadius(height: 18), tint: theme.primaryText))
+            .buttonStyle(NotchButtonStyle(radius: theme.buttonRadius(height: 24), tint: theme.primaryText))
+            .padding(.vertical, -3)
             .help(audio.currentDevice?.name ?? "Output")
         }
     }

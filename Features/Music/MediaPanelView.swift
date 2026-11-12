@@ -93,8 +93,14 @@ struct MediaPanelView: View {
         Button(action: action) {
             Image(systemName: symbol)
                 .font(.system(size: size ?? theme.controlIconSize, weight: .semibold))
-                .foregroundStyle(theme.iconColor.opacity(active == false ? 0.4 : 1))
+                .foregroundStyle(theme.iconColor.opacity(active == false ? 0.5 : 1))
                 .frame(maxWidth: .infinity, minHeight: 22)
+                // Shuffle / Repeat "on" is shown by a dot too, not only by brightness.
+                .overlay(alignment: .bottom) {
+                    if active == true {
+                        Circle().fill(theme.accent).frame(width: 4, height: 4).offset(y: 4)
+                    }
+                }
                 .contentShape(Rectangle())
         }
         .buttonStyle(NotchButtonStyle(radius: theme.buttonRadius, tint: theme.primaryText))

@@ -41,7 +41,7 @@ struct TimerPanelView: View {
                         .truncationMode(.tail)
                         .foregroundStyle(theme.primaryText.opacity(isSelected ? 1 : 0.65))
                         .padding(.horizontal, Spacing.xxs)
-                        .frame(maxWidth: .infinity, minHeight: 18)
+                        .frame(maxWidth: .infinity, minHeight: 20)
                         .background(Capsule().fill(theme.primaryText.opacity(isSelected ? Highlight.selected : Highlight.panel)))
                         .overlay(alignment: .topTrailing) {
                             if p.isRunning || p.isRinging {
