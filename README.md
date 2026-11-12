@@ -13,10 +13,10 @@ A "Dynamic Island" for the MacBook notch. Closed, it shows the album cover and a
 - **Spotify now playing**: cover, title, artist, progress bar and playback controls
 - **Audio**: system volume, mute and output-device picker
 - **Brightness**: screen and keyboard backlight sliders (where macOS allows it)
-- **Timers**: up to 5 concurrent timers with alarms, kept across restarts
+- **Timers**: set any length right in the notch (scroll or drag a number), up to 3 timers running at once, star the times you use often; alarms, kept across restarts
 - **Stopwatch** with laps, and named **counters**
 - **Files tab**: a temporary file shelf, AirDrop and Trash drop zones
-- **Fully customizable**: themes (JSON import/export), colors, corner radii, layout and module order, spring settings for every animation
+- **Fully customizable**: themes (JSON import/export), colors, corner radii, slider and knob style, layout and module order, spring settings for every animation
 - **Liquid Glass themes** (macOS 26+): the open notch can be made of Apple's Liquid Glass, morphing as it opens and closes
 - Works on external displays too (draws a virtual notch)
 
@@ -43,7 +43,7 @@ Corner rounding and shadow apply to the glass too. **Full Liquid Glass requires 
 
 ## Install
 
-1. Download `FontaDynamicNotch-0.3.zip` from the [Releases page](https://github.com/Fonta-lab/FontaDynamicNotch/releases) and unzip it.
+1. Download `FontaDynamicNotch-0.4.zip` from the [Releases page](https://github.com/Fonta-lab/FontaDynamicNotch/releases) and unzip it.
 2. Drag **FontaDynamicNotch.app** into your Applications folder.
 3. The app is not notarized by Apple, so the first launch is blocked. Open it once, then go to **System Settings → Privacy & Security** and click **Open Anyway** (or right-click the app → Open).
 
