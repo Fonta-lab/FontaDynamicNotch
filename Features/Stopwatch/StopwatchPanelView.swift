@@ -34,7 +34,7 @@ struct StopwatchPanelView: View {
             .frame(height: 40)
             .contentShape(Rectangle())
             .onHover { showLaps = $0 && !laps.isEmpty }
-            .animation(.easeOut(duration: 0.15), value: showLaps)
+            .animation(Motion.change, value: showLaps)
             Spacer(minLength: 0)
             controls
         }

@@ -5,6 +5,7 @@ import SwiftUI
 struct ClosedWingsView: View {
     let model: NotchViewModel
     let settings: AppSettings
+    let coverNamespace: Namespace.ID
     private var spotify: SpotifyService { .shared }
 
     var body: some View {
@@ -20,6 +21,7 @@ struct ClosedWingsView: View {
                 let inset = (h - side) / 2
                 CoverImage(image: spotify.artwork, radius: theme.coverRadiusClosed)
                     .frame(width: side, height: side)
+                    .matchedGeometryEffect(id: CoverImage.matchID, in: coverNamespace)
                     .position(x: left.minX + inset + side / 2, y: h / 2)
                     .transition(.opacity)
             }
@@ -83,6 +85,8 @@ struct ClosedTimeView: View {
 
 /// Album cover with a placeholder when there is no artwork.
 struct CoverImage: View {
+    /// The closed and open covers share this id, so the cover moves between them.
+    static let matchID = "cover"
     let image: NSImage?
     let radius: CGFloat
 

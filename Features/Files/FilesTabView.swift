@@ -62,7 +62,7 @@ struct ShelfView: View {
             shelf.add(urls)
             return true
         } isTargeted: { targeted = $0 }
-        .animation(.easeOut(duration: 0.15), value: targeted)
+        .animation(Motion.feedback, value: targeted)
     }
 }
 
@@ -196,7 +196,7 @@ struct DropZoneBox: View {
         .scaleEffect(targeted ? 1.04 : 1)
         .modifier(ShakeEffect(shakes: CGFloat(shake)))
         .contentShape(Rectangle())
-        .animation(.easeOut(duration: 0.15), value: targeted)
+        .animation(Motion.feedback, value: targeted)
     }
 }
 

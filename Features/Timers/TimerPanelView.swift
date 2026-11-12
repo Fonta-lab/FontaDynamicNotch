@@ -80,7 +80,6 @@ struct TimerPanelView: View {
 /// Shown instead of the Home tab while an alarm rings (SPEC §7.4): the timer name(s) and a big Stop.
 struct AlarmView: View {
     let theme: Theme
-    @State private var pulse = false
     private var timers: TimerStore { .shared }
 
     var body: some View {
@@ -88,9 +87,8 @@ struct AlarmView: View {
             Image(systemName: "bell.and.waves.left.and.right.fill")
                 .font(.system(size: 34, weight: .semibold))
                 .foregroundStyle(theme.primaryText)
-                .scaleEffect(pulse ? 1.08 : 0.94)
-                .animation(.easeInOut(duration: 0.5).repeatForever(autoreverses: true), value: pulse)
-                .onAppear { pulse = true }
+                // Apple's own ringing effect: the waves light up in turn (calms down with Reduce Motion).
+                .symbolEffect(.variableColor.iterative.reversing, options: .repeating)
 
             VStack(alignment: .leading, spacing: Spacing.xs) {
                 Text(timers.ringing.count > 1 ? "Timers ended" : "Timer ended")

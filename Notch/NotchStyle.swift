@@ -38,3 +38,16 @@ extension Theme {
 enum TopBarMetrics {
     static let itemHeight: CGFloat = 24
 }
+
+/// Small animations inside the notch. The big ones (open, close, wings, tabs…) are the user's
+/// springs from Settings › Animations.
+enum Motion {
+    /// Hover, press, toggle: a quick spring with a hint of bounce.
+    static var feedback: Animation { .snappy(duration: 0.25) }
+    /// Small things appearing or changing (output list, lap list, drop targets): smooth, no bounce.
+    static var change: Animation { .smooth(duration: 0.3) }
+    /// The open content waits this long, so the notch starts growing before the content shows.
+    static let contentDelay: Double = 0.05
+    /// Content leaving on close: quicker than the shape, so it's gone before the notch shrinks.
+    static var contentOut: Animation { .smooth(duration: 0.15) }
+}

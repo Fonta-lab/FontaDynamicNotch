@@ -5,6 +5,7 @@ struct NotchView: View {
     private var settings: AppSettings { SettingsStore.shared.settings }
     private var spotify: SpotifyService { .shared }
     @Environment(\.colorScheme) private var colorScheme
+    @Namespace private var coverNamespace
 
     var body: some View {
         let g = model.geometry
@@ -27,12 +28,12 @@ struct NotchView: View {
 
             ZStack(alignment: .topLeading) {
                 if open {
-                    OpenContentView(model: model, settings: settings)
+                    OpenContentView(model: model, settings: settings, coverNamespace: coverNamespace)
                         .frame(width: g.openRect.width, height: g.openRect.height)
                         .offset(x: g.openRect.minX)
-                        .transition(.opacity)
+                        .transition(contentTransition)
                 } else if model.wingsVisible {
-                    ClosedWingsView(model: model, settings: settings)
+                    ClosedWingsView(model: model, settings: settings, coverNamespace: coverNamespace)
                         .transition(.opacity)
                 }
             }
@@ -54,12 +55,22 @@ struct NotchView: View {
 
     private struct WingKey: Equatable { let left: CGFloat; let right: CGFloat }
 
+    /// The notch grows first and the content follows a moment later, scaling up slightly from the
+    /// top; on close the content fades out quickly, before the shape has shrunk around it.
+    private var contentTransition: AnyTransition {
+        .asymmetric(
+            insertion: .opacity.combined(with: .scale(scale: 0.95, anchor: .top))
+                .animation(settings.animations.open.animation.delay(Motion.contentDelay)),
+            removal: .opacity.animation(Motion.contentOut))
+    }
+
 }
 
 /// Everything inside the open notch: the top bar and the Home tab (or the alarm while ringing).
 struct OpenContentView: View {
     let model: NotchViewModel
     let settings: AppSettings
+    let coverNamespace: Namespace.ID
     private var alarm: AlarmService { .shared }
 
     var body: some View {
@@ -80,7 +91,7 @@ struct OpenContentView: View {
                 } else {
                     // Music block centred vertically against the (full-height) tool panel.
                     HStack(alignment: .center, spacing: Spacing.m) {
-                        MediaPanelView(theme: theme, settings: settings)
+                        MediaPanelView(theme: theme, settings: settings, coverNamespace: coverNamespace)
                         // Hidden when every tool is turned off in Settings › Layout & Modules.
                         if !settings.visibleTools.isEmpty {
                             ToolPanelView(theme: theme, spring: settings.animations.tabSwitch.animation,

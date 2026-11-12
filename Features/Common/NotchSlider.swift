@@ -53,7 +53,7 @@ struct NotchSlider: View {
         }
         .frame(height: max(theme.knobSize, 12))
         .onHover { hovering = $0 }
-        .animation(.easeOut(duration: 0.15), value: hovering)
+        .animation(Motion.feedback, value: hovering)
     }
 
     private var fillColor: Color {

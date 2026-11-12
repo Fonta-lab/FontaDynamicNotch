@@ -5,6 +5,8 @@ import SwiftUI
 struct MediaPanelView: View {
     let theme: Theme
     let settings: AppSettings
+    /// Shared with the closed wing's cover, so the cover grows out of the wing when the notch opens.
+    let coverNamespace: Namespace.ID
     private var spotify: SpotifyService { .shared }
 
     @Environment(\.notchActions) private var actions
@@ -16,6 +18,7 @@ struct MediaPanelView: View {
         HStack(alignment: .top, spacing: Spacing.m) {
             CoverImage(image: spotify.track != nil && spotify.isRunning ? spotify.artwork : nil, radius: theme.coverRadiusOpen)
                 .frame(width: side, height: side)
+                .matchedGeometryEffect(id: CoverImage.matchID, in: coverNamespace)
 
             VStack(alignment: .leading, spacing: 0) {
                 VolumeRow(theme: theme, showDevices: $showDevices)
@@ -34,10 +37,10 @@ struct MediaPanelView: View {
                         OutputDeviceList(theme: theme) { showDevices = false }
                     }
                     .padding(.top, 22)
-                    .transition(.opacity.combined(with: .move(edge: .top)))
+                    .transition(.opacity.combined(with: .scale(scale: 0.95, anchor: .top)))
                 }
             }
-            .animation(.easeOut(duration: 0.15), value: showDevices)
+            .animation(Motion.change, value: showDevices)
         }
         .onChange(of: showDevices) { _, open in actions.setCloseBlocker(.outputList, open) }
         .onChange(of: actions.dismissToken) { showDevices = false }
@@ -156,8 +159,8 @@ private struct NotchButtonBody: View {
             .scaleEffect(configuration.isPressed ? 0.94 : 1)
             .contentShape(Rectangle())
             .onHover { hovering = $0 }
-            .animation(.easeOut(duration: 0.12), value: hovering)
-            .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
+            .animation(Motion.feedback, value: hovering)
+            .animation(Motion.feedback, value: configuration.isPressed)
     }
 
     private var fill: Double {
