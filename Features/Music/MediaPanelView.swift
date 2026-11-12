@@ -68,9 +68,9 @@ struct MediaPanelView: View {
     private func nowPlaying(_ track: SpotifyTrack) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             MarqueeText(text: track.name.isEmpty ? "Unknown" : track.name,
-                        font: .system(size: 13, weight: .semibold), color: theme.primaryText,
+                        font: .body.weight(.semibold), color: theme.primaryText,
                         enabled: settings.marqueeEnabled)
-            MarqueeText(text: track.artist, font: .system(size: 12), color: theme.secondaryText,
+            MarqueeText(text: track.artist, font: .callout, color: theme.secondaryText,
                         enabled: settings.marqueeEnabled)
             Spacer(minLength: 4)
             ProgressBar(theme: theme)
@@ -103,11 +103,11 @@ struct MediaPanelView: View {
     private func message(_ text: String, button: String?, action: @escaping () -> Void) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Spacer(minLength: 0)
-            Text(text).font(.system(size: 13, weight: .semibold)).foregroundStyle(theme.secondaryText)
+            Text(text).font(.body.weight(.semibold)).foregroundStyle(theme.secondaryText)
             if let button {
                 Button(button, action: action)
                     .buttonStyle(NotchButtonStyle(radius: theme.buttonRadius, filled: true))
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(.callout.weight(.semibold))
                     .foregroundStyle(theme.primaryText)
             }
             Spacer(minLength: 0)

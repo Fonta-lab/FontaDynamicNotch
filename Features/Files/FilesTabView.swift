@@ -29,15 +29,15 @@ struct ShelfView: View {
                 .fill(Color.white.opacity(targeted ? 0.14 : 0.07))
             if shelf.items.isEmpty {
                 VStack(spacing: 6) {
-                    Image(systemName: "tray.and.arrow.down").font(.system(size: 22))
-                    Text("Drop files here").font(.system(size: 12, weight: .medium))
+                    Image(systemName: "tray.and.arrow.down").font(.title)
+                    Text("Drop files here").font(.callout.weight(.medium))
                 }
                 .foregroundStyle(theme.secondaryText)
             } else {
                 VStack(alignment: .trailing, spacing: 2) {
                     Button("Clear all") { shelf.clear() }
                         .buttonStyle(.plain)
-                        .font(.system(size: 10, weight: .semibold))
+                        .font(.caption.weight(.semibold))
                         .foregroundStyle(theme.secondaryText)
                         .padding(.trailing, 10)
                         .padding(.top, 6)
@@ -83,7 +83,7 @@ struct ShelfItemView: View {
             }
             .frame(width: 44, height: 44)
             Text(item.name)
-                .font(.system(size: 9, weight: .medium))
+                .font(.caption.weight(.medium))
                 .foregroundStyle(theme.primaryText)
                 .lineLimit(2)
                 .multilineTextAlignment(.center)
@@ -96,7 +96,7 @@ struct ShelfItemView: View {
             if hovering {
                 Button { ShelfStore.shared.remove(item.id) } label: {
                     Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 13))
+                        .font(.body)
                         .foregroundStyle(.white, .black.opacity(0.6))
                 }
                 .buttonStyle(.plain)
@@ -176,9 +176,9 @@ struct DropZoneBox: View {
 
     var body: some View {
         VStack(spacing: 6) {
-            Image(systemName: symbol).font(.system(size: 22, weight: .medium))
+            Image(systemName: symbol).font(.title.weight(.medium))
             Text(message ?? title)
-                .font(.system(size: message == nil ? 12 : 10, weight: .medium))
+                .font((message == nil ? Font.callout : .caption).weight(.medium))
                 .multilineTextAlignment(.center)
                 .lineLimit(2)
         }

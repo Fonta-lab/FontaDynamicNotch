@@ -12,8 +12,8 @@ struct PanelButton: View {
     var body: some View {
         Button(action: action) {
             HStack(spacing: 4) {
-                if let symbol { Image(systemName: symbol).font(.system(size: 11, weight: .semibold)) }
-                if let title { Text(title).font(.system(size: 13, weight: .bold).monospacedDigit()) }
+                if let symbol { Image(systemName: symbol).font(.subheadline.weight(.semibold)) }
+                if let title { Text(title).font(.body.weight(.bold).monospacedDigit()) }
             }
             .foregroundStyle(theme.primaryText.opacity(enabled ? 1 : 0.35))
             .frame(maxWidth: .infinity, minHeight: 26, maxHeight: 26)

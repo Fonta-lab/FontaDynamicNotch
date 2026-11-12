@@ -1,5 +1,11 @@
 import SwiftUI
 
+/// Shared look of the three tool panels, so the timer, stopwatch and counter match.
+enum ToolPanelStyle {
+    /// The big number (time or count): Large Title, semibold, digits that don't jitter.
+    static let valueFont = Font.largeTitle.weight(.semibold).monospacedDigit()
+}
+
 /// The right-hand panel of the Home tab: shows the selected tool.
 struct ToolPanelView: View {
     let theme: Theme

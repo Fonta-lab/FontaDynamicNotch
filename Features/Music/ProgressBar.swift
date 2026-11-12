@@ -25,7 +25,7 @@ struct ProgressBar: View {
                     Spacer()
                     Text(Self.format(duration))
                 }
-                .font(.system(size: 10, weight: .medium).monospacedDigit())
+                .font(.caption.weight(.medium).monospacedDigit())
                 .foregroundStyle(theme.secondaryText)
             }
         }

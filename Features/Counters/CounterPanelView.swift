@@ -11,7 +11,7 @@ struct CounterPanelView: View {
             HStack(spacing: 4) {
                 arrow("chevron.left", enabled: multiple) { store.step(-1) }
                 Text(store.selected?.name ?? "Counter")
-                    .font(.system(size: 11, weight: .medium))
+                    .font(.subheadline.weight(.medium))
                     .foregroundStyle(theme.secondaryText)
                     .lineLimit(1)
                     .truncationMode(.tail)
@@ -20,7 +20,7 @@ struct CounterPanelView: View {
             }
             Spacer(minLength: 0)
             Text("\(store.selected?.value ?? 0)")
-                .font(.system(size: 30, weight: .semibold).monospacedDigit())
+                .font(ToolPanelStyle.valueFont)
                 .foregroundStyle(theme.primaryText)
                 .lineLimit(1)
                 .minimumScaleFactor(0.5)
@@ -38,7 +38,7 @@ struct CounterPanelView: View {
     private func arrow(_ symbol: String, enabled: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: symbol)
-                .font(.system(size: 10, weight: .bold))
+                .font(.caption.weight(.bold))
                 .foregroundStyle(theme.primaryText.opacity(enabled ? 0.8 : 0.25))
                 .frame(width: 18, height: 18)
         }

@@ -11,7 +11,7 @@ struct VolumeRow: View {
         HStack(spacing: 8) {
             Button { audio.toggleMute() } label: {
                 Image(systemName: speakerSymbol)
-                    .font(.system(size: 11, weight: .semibold))
+                    .font(.subheadline.weight(.semibold))
                     .foregroundStyle(theme.iconColor.opacity(audio.isEffectivelyMuted ? 0.5 : 0.9))
                     .frame(width: 20, height: 18)
             }
@@ -23,7 +23,7 @@ struct VolumeRow: View {
 
             Button { showDevices.toggle() } label: {
                 Image(systemName: audio.currentDevice?.symbol ?? "hifispeaker")
-                    .font(.system(size: 11, weight: .semibold))
+                    .font(.subheadline.weight(.semibold))
                     .foregroundStyle(theme.iconColor.opacity(showDevices ? 1 : 0.8))
                     .frame(width: 22, height: 18)
             }
@@ -58,10 +58,10 @@ struct OutputDeviceList: View {
                             Text(device.name).lineLimit(1).truncationMode(.tail)
                             Spacer(minLength: 4)
                             if device.id == audio.state.defaultDeviceID {
-                                Image(systemName: "checkmark").font(.system(size: 10, weight: .bold))
+                                Image(systemName: "checkmark").font(.caption.weight(.bold))
                             }
                         }
-                        .font(.system(size: 11, weight: .medium))
+                        .font(.subheadline.weight(.medium))
                         .foregroundStyle(theme.primaryText)
                         .padding(.horizontal, 8)
                         .frame(height: 22)

@@ -11,20 +11,20 @@ struct StopwatchPanelView: View {
         let laps = store.lapDurations
         VStack(spacing: 2) {
             Text("Stopwatch")
-                .font(.system(size: 11, weight: .medium))
+                .font(.subheadline.weight(.medium))
                 .foregroundStyle(theme.secondaryText)
             Spacer(minLength: 0)
             ZStack {
                 VStack(spacing: 2) {
                     TimelineView(.animation(minimumInterval: 1.0 / 30, paused: !store.isRunning)) { ctx in
                         Text(StopwatchFormat.precise(store.elapsed(at: ctx.date)))
-                            .font(.system(size: 24, weight: .semibold).monospacedDigit())
+                            .font(ToolPanelStyle.valueFont)
                             .foregroundStyle(theme.primaryText.opacity(store.isRunning || store.isIdle ? 1 : 0.55))
                             .lineLimit(1)
                             .minimumScaleFactor(0.6)
                     }
                     Text(laps.last.map { "Lap \(laps.count)  \(StopwatchFormat.precise($0))" } ?? " ")
-                        .font(.system(size: 10, weight: .medium).monospacedDigit())
+                        .font(.caption.weight(.medium).monospacedDigit())
                         .foregroundStyle(theme.secondaryText)
                 }
                 .opacity(showLaps ? 0 : 1)
@@ -49,7 +49,7 @@ struct StopwatchPanelView: View {
                         Spacer()
                         Text(StopwatchFormat.precise(d))
                     }
-                    .font(.system(size: 10, weight: .medium).monospacedDigit())
+                    .font(.caption.weight(.medium).monospacedDigit())
                     .foregroundStyle(theme.primaryText)
                 }
             }

@@ -56,8 +56,9 @@ struct ClosedWingsView: View {
 /// stopwatch (without centiseconds). Updates once a second, only while visible.
 struct ClosedTimeView: View {
     let theme: Theme
-    static let fontSize: CGFloat = 14
-    static let capHeight = NSFont.systemFont(ofSize: fontSize, weight: .semibold).capHeight
+    /// Title 3 (15 pt on macOS); its cap height is what the wing centres.
+    static let capHeight = NSFont.systemFont(ofSize: NSFont.preferredFont(forTextStyle: .title3).pointSize,
+                                             weight: .semibold).capHeight
     private var timers: TimerStore { .shared }
     private var stopwatch: StopwatchStore { .shared }
 
@@ -65,7 +66,7 @@ struct ClosedTimeView: View {
         TimelineView(.periodic(from: .now, by: 1)) { ctx in
             if let text = text(at: ctx.date) {
                 Text(text)
-                    .font(.system(size: Self.fontSize, weight: .semibold).monospacedDigit())
+                    .font(.title3.weight(.semibold).monospacedDigit())
                     .foregroundStyle(theme.primaryText)
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)

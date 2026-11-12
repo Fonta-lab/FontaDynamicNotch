@@ -11,7 +11,7 @@ struct TimerPanelView: View {
             chips(selectedID: selected?.id)
             Spacer(minLength: 0)
             Text(selected?.name ?? "")
-                .font(.system(size: 11, weight: .medium))
+                .font(.subheadline.weight(.medium))
                 .foregroundStyle(theme.secondaryText)
                 .lineLimit(1)
                 .truncationMode(.tail)
@@ -19,7 +19,7 @@ struct TimerPanelView: View {
                 // Refreshes only while this panel is visible and the timer runs.
                 TimelineView(.animation(minimumInterval: 0.25, paused: !selected.isRunning)) { ctx in
                     Text(TimeFormat.countdown(store.remaining(selected, at: ctx.date)))
-                        .font(.system(size: 28, weight: .semibold).monospacedDigit())
+                        .font(ToolPanelStyle.valueFont)
                         .foregroundStyle(timeColor(selected))
                         .lineLimit(1)
                         .minimumScaleFactor(0.6)
@@ -36,7 +36,7 @@ struct TimerPanelView: View {
                 let isSelected = p.id == selectedID
                 Button { store.select(p.id) } label: {
                     Text(p.name)
-                        .font(.system(size: 9, weight: .semibold))
+                        .font(.caption.weight(.semibold))
                         .lineLimit(1)
                         .truncationMode(.tail)
                         .foregroundStyle(theme.primaryText.opacity(isSelected ? 1 : 0.65))
@@ -94,13 +94,13 @@ struct AlarmView: View {
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(timers.ringing.count > 1 ? "Timers ended" : "Timer ended")
-                    .font(.system(size: 11, weight: .medium))
+                    .font(.subheadline.weight(.medium))
                     .foregroundStyle(theme.secondaryText)
                 ScrollView(.vertical, showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 2) {
                         ForEach(timers.ringing) { t in
                             Text(t.name)
-                                .font(.system(size: 17, weight: .semibold))
+                                .font(.title2.weight(.semibold))
                                 .foregroundStyle(theme.primaryText)
                                 .lineLimit(1)
                         }
@@ -113,7 +113,7 @@ struct AlarmView: View {
 
             Button { AlarmService.shared.stop() } label: {
                 Text("Stop")
-                    .font(.system(size: 18, weight: .bold))
+                    .font(.title2.weight(.bold))
                     .foregroundStyle(.black)
                     .frame(width: 120, height: 52)
                     .background(Capsule().fill(Color.white))
