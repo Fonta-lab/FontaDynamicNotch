@@ -28,6 +28,9 @@ struct SurfaceSettingsSection: View {
                     }
                     .labelsHidden()
                 }
+                LabeledSlider(title: "Blur behind the notch", value: $theme.glassBlur, range: 0...1,
+                              format: { $0 == 0 ? "Off" : "\(Int($0 * 100))%" })
+                    .help("How much what's under the notch is blurred. Off = only the glass's own blur.")
                 Toggle(isOn: $theme.glassTintEnabled) {
                     Text("Tint the glass")
                     if theme.useArtworkColor {

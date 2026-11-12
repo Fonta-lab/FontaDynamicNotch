@@ -304,7 +304,7 @@ A macOS-style window (SwiftUI, sidebar navigation like System Settings). Changes
    - **Colors:** fallback background, primary text, secondary text, accent, icon color, slider track, slider fill, slider knob, use-artwork-color toggle, artwork intensity, max background brightness.
    - **Corner rounding:** top fillet radius, open bottom radius, closed bottom radius, cover radius (open), cover radius (closed), button radius.
    - **Shadow:** on/off, color, opacity, radius, y-offset.
-   - **Surface:** Solid / Liquid Glass, glass variant, transparency (Clear ↔ Tinted), tint + intensity, dimming, glass when closed.
+   - **Surface:** Solid / Liquid Glass, glass variant, transparency (Clear ↔ Tinted), **blur behind the notch** (0 = off, the default; added v0.4 at the user's request), tint + intensity, dimming, glass when closed. macOS has no public way to set a blur radius, so the blur is a blurred material under the glass faded in by the slider (full blur at 100%, a blend in between).
    - **Icon size** (top bar and controls separately).
    - **Sliders:** height, knob size, knob shape (circle / capsule / none), knob visible only on hover, fill style (solid / artwork color).
 3. **Layout & Modules:** drag-to-reorder the left and right top-bar groups; show/hide each module (Home/Files, Screen brightness, Keyboard brightness, Timer, Stopwatch, Counter); open width/height; closed wing width.
