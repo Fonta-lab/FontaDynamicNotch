@@ -2,7 +2,6 @@
 
 🏝️ A "Dynamic Island" for the MacBook notch. Closed, it shows the album cover and animated music bars (or a running timer). Hover it and it springs open into a small control panel, with the album cover growing out of the closed notch. ✨
 
-![Open notch: Spotify, volume, output device and timers](docs/screenshots/home.png)
 
 | 🌙 Closed | ⏱️ Stopwatch | 📁 Files |
 |---|---|---|
