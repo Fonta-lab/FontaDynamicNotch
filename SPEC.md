@@ -141,13 +141,13 @@ Do **not** close while:
 ```
  ╭─fillet                                                              fillet─╮
  │ [⌂|🗂] [☀︎] [⌨︎☀︎]   ████ real notch ████   [⏲ timer] [⏱ stopwatch] [▦ counter] │  ← top bar (height = notch height)
- │ ┌──────────┐  🔈━━━━━━━●━━━━━━  [output]         ┌──────────────────────┐ │
+ │ ┌──────────┐  🔈━━━━━━━●━━━━━━  [output]         ┌───────────────────────┐ │
  │ │          │  Song name                          │  [chips / name]       │ │
  │ │  COVER   │  Artist                             │    12:34.56           │ │  ← right tool panel
  │ │          │  ━━━━━━━●━━━━━━━━━━━━━━━━           │  [ctrl] [ctrl] [ctrl] │ │
- │ └──────────┘  1:20                        3:30   └──────────────────────┘ │
+ │ └──────────┘  1:20                        3:30   └───────────────────────┘ │
  │               ⤮    ⏮    ⏯    ⏭    ⟳                                       │
- ╰──────────────────────────────────────────────────────────────────────────╯
+ ╰────────────────────────────────────────────────────────────────────────────╯
 ```
 
 - Default open size: **604 × 176 pt** including the top bar (the user's own setting, made the default in v0.4; 600 × 190 before). Configurable.
